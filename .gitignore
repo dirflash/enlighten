@@ -1,0 +1,9 @@
+.git
+.env
+.venv
+.vscode
+*.ini
+*.log
+*.bat
+__pycache__
+logs/**
