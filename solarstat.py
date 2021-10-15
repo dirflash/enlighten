@@ -53,13 +53,15 @@ if __name__ == "__main__":
 
     response = requests.request("GET", url, headers=headers, data=payload)
     respjson = json.loads(response.text)
+    epochlastreport = respjson["last_report_at"]
     lastreport = datetime.datetime.fromtimestamp(int(respjson["last_report_at"]))
     status = respjson["status"]
     collected = respjson["energy_today"]
 
     print(f"Energy collected today: {collected}")
-    print(f"Last reported on {lastreport}")
-    print(f"Solar array status is '{status}'.")
+    print(f"Last reported on (epoch): {epochlastreport}")
+    print(f"Last reported on: {lastreport}")
+    print(f"Solar array status: {status}")
 
     try:
         client.admin.command("ping")
@@ -74,7 +76,12 @@ if __name__ == "__main__":
     """
 
     try:
-        insert = {"LastReported": lastreport, "Collected": collected, "Status": status}
+        insert = {
+            "EpochLastReport": epochlastreport,
+            "LastReport": lastreport,
+            "Collected": collected,
+            "Status": status,
+        }
         post = collection.insert_one(insert)
         print("Created record as {0}".format(post.inserted_id))
     except pymongo.errors.ServerSelectionTimeoutError as err:
