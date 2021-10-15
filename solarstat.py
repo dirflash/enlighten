@@ -2,12 +2,15 @@ import configparser
 import requests
 import json
 import datetime
+import time
 import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
 if __name__ == "__main__":
+
+    start_time = time.time()
 
     config = configparser.ConfigParser()
     config.read("config.ini")
@@ -86,3 +89,5 @@ if __name__ == "__main__":
         print("Created record as {0}".format(post.inserted_id))
     except pymongo.errors.ServerSelectionTimeoutError as err:
         print(err)
+
+    print("--- %.3f seconds ---" % (time.time() - start_time))
