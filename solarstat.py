@@ -11,6 +11,7 @@ from pymongo.errors import ConnectionFailure
 if __name__ == "__main__":
 
     start_time = time.time()
+    current_epoch = int(time.time())
 
     config = configparser.ConfigParser()
     config.read("config.ini")
@@ -61,10 +62,21 @@ if __name__ == "__main__":
     status = respjson["status"]
     collected = respjson["energy_today"]
 
+    lastreportdelta = (current_epoch - epochlastreport) / 60
+
+    if lastreportdelta < 86400:
+        range = True
+    else:
+        range = False
+
     print(f"Energy collected today: {collected}")
     print(f"Last reported on (epoch): {epochlastreport}")
+    print(f"Current time (epoch): {current_epoch}")
+    print(f"Epoch delta: {current_epoch - epochlastreport}")
     print(f"Last reported on: {lastreport}")
+    print(f"Time since last reported (mins): %.3f" % lastreportdelta)
     print(f"Solar array status: {status}")
+    print(f"In range? {range}")
 
     try:
         client.admin.command("ping")
@@ -84,6 +96,7 @@ if __name__ == "__main__":
             "LastReport": lastreport,
             "Collected": collected,
             "Status": status,
+            "Reporting": range,
         }
         post = collection.insert_one(insert)
         print("Created record as {0}".format(post.inserted_id))
