@@ -55,52 +55,48 @@ if __name__ == "__main__":
     payload = {}
     headers = {}
 
-    response = requests.request("GET", url, headers=headers, data=payload)
-    respjson = json.loads(response.text)
-    epochlastreport = respjson["last_report_at"]
-    lastreport = datetime.datetime.fromtimestamp(int(respjson["last_report_at"]))
-    status = respjson["status"]
-    collected = respjson["energy_today"]
+    while True:
+        response = requests.request("GET", url, headers=headers, data=payload)
+        respjson = json.loads(response.text)
+        epochlastreport = respjson["last_report_at"]
+        lastreport = datetime.datetime.fromtimestamp(int(respjson["last_report_at"]))
+        status = respjson["status"]
+        collected = respjson["energy_today"]
 
-    lastreportdelta = (current_epoch - epochlastreport) / 60
+        lastreportdelta = (current_epoch - epochlastreport) / 60
 
-    if lastreportdelta < 86400:
-        range = True
-    else:
-        range = False
+        if lastreportdelta < 86400:
+            range = True
+        else:
+            range = False
 
-    print(f"Energy collected today: {collected}")
-    print(f"Last reported on (epoch): {epochlastreport}")
-    print(f"Current time (epoch): {current_epoch}")
-    print(f"Epoch delta: {current_epoch - epochlastreport}")
-    print(f"Last reported on: {lastreport}")
-    print(f"Time since last reported (mins): %.3f" % lastreportdelta)
-    print(f"Solar array status: {status}")
-    print(f"In range? {range}")
+        print(f"Energy collected today: {collected}")
+        print(f"Last reported on (epoch): {epochlastreport}")
+        print(f"Current time (epoch): {current_epoch}")
+        print(f"Epoch delta: {current_epoch - epochlastreport}")
+        print(f"Last reported on: {lastreport}")
+        print(f"Time since last reported (mins): %.3f" % lastreportdelta)
+        print(f"Solar array status: {status}")
+        print(f"In range? {range}")
 
-    try:
-        client.admin.command("ping")
-    except ConnectionFailure:
-        print("Server not available")
+        try:
+            client.admin.command("ping")
+        except ConnectionFailure:
+            print("Server not available")
 
-    """try:
-        for coll in client.getCollectionNames():
-            print(f"default collection: {coll}")
-    except ConnectionFailure:
-        print("Database not available")
-    """
+        try:
+            insert = {
+                "EpochLastReport": epochlastreport,
+                "LastReport": lastreport,
+                "Collected": collected,
+                "Status": status,
+                "Reporting": range,
+            }
+            post = collection.insert_one(insert)
+            print("Created record as {0}".format(post.inserted_id))
+        except pymongo.errors.ServerSelectionTimeoutError as err:
+            print(err)
 
-    try:
-        insert = {
-            "EpochLastReport": epochlastreport,
-            "LastReport": lastreport,
-            "Collected": collected,
-            "Status": status,
-            "Reporting": range,
-        }
-        post = collection.insert_one(insert)
-        print("Created record as {0}".format(post.inserted_id))
-    except pymongo.errors.ServerSelectionTimeoutError as err:
-        print(err)
+        print("--- %.3f seconds ---" % (time.time() - start_time))
 
-    print("--- %.3f seconds ---" % (time.time() - start_time))
+        time.sleep(14400)

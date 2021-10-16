@@ -86,11 +86,11 @@ if __name__ == "__main__":
             time.sleep(10)
 
         print("60 minutes to next poll")
-        time.sleep(290)
+        time.sleep(1190)
         print("45 minutes to next poll")
-        time.sleep(300)
+        time.sleep(1200)
         print("30 minutes to next poll")
-        time.sleep(300)
+        time.sleep(1200)
         print("15 minutes to next poll")
 
     GPIO.cleanup()
