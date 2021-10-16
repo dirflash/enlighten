@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import configparser
+from datetime import datetime
 import time
 import sys
 import certifi
@@ -51,6 +52,8 @@ if __name__ == "__main__":
 
     while True:
         print("Recycle for new data")
+        now = datetime.now().strftime("%m-%d-%Y %I:%M:%S")
+        print(f"--- {now} ---")
         GPIO.output(blue, GPIO.LOW)
         GPIO.output(green, GPIO.LOW)
         GPIO.output(red, GPIO.LOW)
