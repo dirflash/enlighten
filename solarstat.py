@@ -6,8 +6,8 @@ __license__ = "MIT License"
 import configparser
 import requests
 import json
-import datetime
 import time
+from datetime import datetime, timedelta
 import certifi
 import pymongo
 from pymongo import MongoClient
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         response = requests.request("GET", url, headers=headers, data=payload)
         respjson = json.loads(response.text)
         epochlastreport = respjson["last_report_at"]
-        lastreport = datetime.datetime.fromtimestamp(int(respjson["last_report_at"]))
+        lastreport = datetime.fromtimestamp(int(respjson["last_report_at"]))
         status = respjson["status"]
         collected = respjson["energy_today"]
 
@@ -102,6 +102,10 @@ if __name__ == "__main__":
         except pymongo.errors.ServerSelectionTimeoutError as err:
             print(err)
 
-        print("--- %.3f seconds ---" % (time.time() - start_time))
+        print("--- Script ran in %.3f seconds ---" % (time.time() - start_time))
+
+        ennext = datetime.now() + timedelta(seconds=14400)
+        nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
+        print(f"--- Next run: {nextrun} ---")
 
         time.sleep(14400)
