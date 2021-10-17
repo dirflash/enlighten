@@ -6,17 +6,22 @@ __license__ = "MIT License"
 import configparser
 import requests
 import json
-import time
+from time import time, sleep
 from datetime import datetime, timedelta
 import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+from rich import print
+from rich.console import Console
+from rich.table import Table
 
 if __name__ == "__main__":
 
-    start_time = time.time()
-    current_epoch = int(time.time())
+    start_time = time()
+    current_epoch = int(time())
+
+    console = Console()
 
     config = configparser.ConfigParser()
     config.read("config.ini")
@@ -75,14 +80,25 @@ if __name__ == "__main__":
         else:
             range = False
 
-        print(f"Energy collected today: {collected}")
-        print(f"Last reported on (epoch): {epochlastreport}")
-        print(f"Current time (epoch): {current_epoch}")
-        print(f"Epoch delta: {current_epoch - epochlastreport}")
-        print(f"Last reported on: {lastreport}")
-        print(f"Time since last reported (mins): %.3f" % lastreportdelta)
-        print(f"Solar array status: {status}")
-        print(f"In range? {range}")
+        epochdelta = current_epoch - epochlastreport
+
+        coltable = Table(title="Solar Statistics", style="green")
+
+        coltable.add_column("Type", style="green")
+        coltable.add_column("Data", justify="right", style="green")
+
+        coltable.add_row("Last report (epoch)", str(epochlastreport))
+        coltable.add_row("Current time (epoch)", str(current_epoch))
+        coltable.add_row("Delta (epoch)", str(epochdelta))
+        coltable.add_row("Last reported mins ago", str(lastreportdelta))
+        coltable.add_row("In range?", str(range))
+        coltable.add_row("Solar array status", status)
+        coltable.add_row("Energy collected", str(collected))
+
+        if coltable.columns:
+            console.print(coltable)
+        else:
+            print("[i]No data...[/i]")
 
         try:
             client.admin.command("ping")
@@ -98,14 +114,20 @@ if __name__ == "__main__":
                 "Reporting": range,
             }
             post = collection.insert_one(insert)
-            print("Created record as {0}".format(post.inserted_id))
+            console.log(
+                "Created MongoDB record as {0}".format(post.inserted_id),
+                style="bold red",
+            )
         except pymongo.errors.ServerSelectionTimeoutError as err:
             print(err)
 
-        print("--- Script ran in %.3f seconds ---" % (time.time() - start_time))
+        console.log(
+            "--- Script ran in [bold cyan]%.3f seconds[/bold cyan] ---"
+            % (time() - start_time)
+        )
 
         ennext = datetime.now() + timedelta(seconds=14400)
         nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
-        print(f"--- Next run: {nextrun} ---")
+        console.log(f"--- Next run: [bold cyan]{nextrun}[/bold cyan] ---")
 
-        time.sleep(14400)
+        sleep(14400)
