@@ -119,7 +119,7 @@ if __name__ == "__main__":
             }
             post = collection.insert_one(insert)
             console.log(
-                "--- Created MongoDB record ---",  # as {0}".format(post.inserted_id),
+                "--- Created MongoDB record as {0} ---".format(post.inserted_id),
                 style="deep_pink4",
             )
         except pymongo.errors.ServerSelectionTimeoutError as err:
