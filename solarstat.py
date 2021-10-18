@@ -74,6 +74,10 @@ if __name__ == "__main__":
         collected = respjson["energy_today"]
 
         lastreportdelta = (current_epoch - epochlastreport) / 60
+        hours = int(lastreportdelta)
+        minutes = (lastreportdelta * 60) % 60
+        seconds = (lastreportdelta * 3600) % 60
+        lrd = str(("%d:%02d.%02d" % (hours, minutes, seconds)))
 
         if lastreportdelta < 86400:
             range = True
@@ -90,7 +94,7 @@ if __name__ == "__main__":
         coltable.add_row("Last report (epoch)", str(epochlastreport))
         coltable.add_row("Current time (epoch)", str(current_epoch))
         coltable.add_row("Delta (epoch)", str(epochdelta))
-        coltable.add_row("Last reported mins ago", str(lastreportdelta))
+        coltable.add_row("Last reported hrs:mins:secs ago", (lrd))
         coltable.add_row("In range?", str(range))
         coltable.add_row("Solar array status", status)
         coltable.add_row("Energy collected", str(collected))
