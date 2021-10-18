@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
         epochdelta = current_epoch - epochlastreport
 
-        coltable = Table(title="Solar Statistics", style="green")
+        coltable = Table(title="Solar Statistics", style="bold green")
 
         coltable.add_column("Type", style="green")
         coltable.add_column("Data", justify="right", style="green")
