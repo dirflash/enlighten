@@ -12,7 +12,7 @@ import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
-from rich import print
+from rich import print, box
 from rich.console import Console
 from rich.table import Table
 
@@ -86,10 +86,10 @@ if __name__ == "__main__":
 
         epochdelta = current_epoch - epochlastreport
 
-        coltable = Table(title="Solar Statistics", style="green")
+        coltable = Table(title="Solar Statistics", box=box.SIMPLE, style="blue")
 
-        coltable.add_column("Type", style="green")
-        coltable.add_column("Data", justify="right", style="green")
+        coltable.add_column("Type", style="blue1")
+        coltable.add_column("Data", justify="right", style="blue1")
 
         coltable.add_row("Last report (epoch)", str(epochlastreport))
         coltable.add_row("Current time (epoch)", str(current_epoch))
@@ -119,8 +119,8 @@ if __name__ == "__main__":
             }
             post = collection.insert_one(insert)
             console.log(
-                "Created MongoDB record as {0}".format(post.inserted_id),
-                style="bold red",
+                "--- Created MongoDB record ---",  # as {0}".format(post.inserted_id),
+                style="deep_pink4",
             )
         except pymongo.errors.ServerSelectionTimeoutError as err:
             print(err)
