@@ -86,10 +86,10 @@ if __name__ == "__main__":
 
         epochdelta = current_epoch - epochlastreport
 
-        coltable = Table(title="Solar Statistics", box=box.SIMPLE, style="blue")
+        coltable = Table(title="Solar Statistics", box=box.SIMPLE, style="cyan")
 
-        coltable.add_column("Type", style="blue1")
-        coltable.add_column("Data", justify="right", style="blue1")
+        coltable.add_column("Type", style="cyan3")
+        coltable.add_column("Data", justify="right", style="cyan3")
 
         coltable.add_row("Last report (epoch)", str(epochlastreport))
         coltable.add_row("Current time (epoch)", str(current_epoch))
