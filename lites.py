@@ -5,17 +5,23 @@ __license__ = "MIT License"
 
 import RPi.GPIO as GPIO
 import configparser
-from datetime import datetime
-import time
+from datetime import datetime, timedelta
+from time import time, sleep, strftime, ctime
 import sys
 import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
+from rich import print, box
+from rich.console import Console
+from rich.table import Table
+from rich.progress import track
 
 if __name__ == "__main__":
 
-    start_time = time.time()
+    start_time = time()
+
+    console = Console()
 
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
@@ -56,20 +62,20 @@ if __name__ == "__main__":
     collection = db[mongocollect]
 
     while True:
-        print("Recycle for new data")
+        console.log("[bold green]--- Recycle for new data ---[/bold green]")
         now = datetime.now().strftime("%m-%d-%Y %I:%M:%S")
-        print(f"--- {now} ---")
+        console.log(f"--- Current time: {now} ---")
         GPIO.output(blue, GPIO.LOW)
         GPIO.output(green, GPIO.LOW)
         GPIO.output(red, GPIO.LOW)
 
         try:
-            connect_time = time.time()
+            startime = datetime.now()
             info = client.server_info()
-            print(
-                "--- %.3f seconds to connect to MongoDB ---"
-                % (time.time() - connect_time)
-            )
+            pconnect_time = ((str(datetime.now() - startime))[:-4]).replace("0:00:", "")
+            # qconnect_time = pconnect_time.replace("0:00:", "")
+            connect_time = "".join(pconnect_time)
+
             GPIO.output(blue, GPIO.HIGH)
         except ServerSelectionTimeoutError:
             sys.exit("--- Server not available ---")
@@ -77,25 +83,62 @@ if __name__ == "__main__":
         lastrecord = collection.find().sort("_id", -1).limit(1)
         for x in lastrecord:
             sysup = x["Reporting"]
-            print(f"System reporting: {sysup}")
+            # print(f"System reporting: {sysup}")
+
+        coltable = Table(title="Solar DB Statistics", box=box.SIMPLE, style="cyan")
+
+        coltable.add_column("Type", style="cyan3")
+        coltable.add_column("Data", justify="right", style="cyan3")
+
+        coltable.add_row("Seconds to connect to DB", str(connect_time))
+        coltable.add_row("Current reporting", str(sysup))
+
+        if coltable.columns:
+            console.print(coltable)
+        else:
+            console.log("[i]--- No data... ---[/i]")
 
         if sysup is True:
             GPIO.output(green, GPIO.HIGH)
-            print("System Green!")
+            console.log("[bold green] --- System Green! ---[/bold green]")
             GPIO.output(red, GPIO.LOW)
-            time.sleep(10)
+            sleep(10)
         else:
             GPIO.output(red, GPIO.HIGH)
-            print("System Red!")
+            console.log("[bold red]--- System Red! ----[/bold red]")
             GPIO.output(green, GPIO.LOW)
-            time.sleep(10)
+            sleep(10)
+
+        instant = datetime.now()
+        nextpoll = instant + timedelta(minutes=60)
+        instup = instant.timetuple()
+
+        now = datetime.now()
+
+        def format(time):
+            return time.strftime("%H").lstrip("0") + time.strftime(":%M")
+
+        print(f"Next poll in 1 hour: {format(now + timedelta(minutes=60))}")
+
+        # quit()
+
+        # pollhours = nextpoll
+        # pollminutes = (nextpoll * 60) % 60
+        # pollseconds = (nextpoll * 3600) % 60
+        # polltime = str(("%d:%02d.%02d" % (pollhours, pollminutes, pollseconds)))
+
+        # coltable.add_row("Next polling time", (polltime))
+
+        # print(f"Next poll at {polltime}")
+        # for n in track(range(3590), description="Waiting..."):
+        # time.sleep(60)
 
         print("60 minutes to next poll")
-        time.sleep(1190)
+        sleep(1190)
         print("45 minutes to next poll")
-        time.sleep(1200)
+        sleep(1200)
         print("30 minutes to next poll")
-        time.sleep(1200)
+        sleep(1200)
         print("15 minutes to next poll")
 
     GPIO.cleanup()
