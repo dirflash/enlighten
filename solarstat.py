@@ -15,6 +15,7 @@ from pymongo.errors import ConnectionFailure
 from rich import print, box
 from rich.console import Console
 from rich.table import Table
+from rich.progress import track
 
 if __name__ == "__main__":
 
@@ -81,9 +82,9 @@ if __name__ == "__main__":
         lrd = str(("%d:%02d.%02d" % (hours, minutes, seconds)))
 
         if lastreportdelta < 86400:
-            range = True
+            inrange = True
         else:
-            range = False
+            inrange = False
 
         epochdelta = current_epoch - epochlastreport
 
@@ -96,7 +97,7 @@ if __name__ == "__main__":
         coltable.add_row("Current time (epoch)", str(current_epoch))
         coltable.add_row("Delta (epoch)", str(epochdelta))
         coltable.add_row("Last reported hrs:mins:secs ago", (lrd))
-        coltable.add_row("In range?", str(range))
+        coltable.add_row("In range?", str(inrange))
         coltable.add_row("Solar array status", status)
         coltable.add_row("Energy collected", str(collected))
 
@@ -116,7 +117,7 @@ if __name__ == "__main__":
                 "LastReport": lastreport,
                 "Collected": collected,
                 "Status": status,
-                "Reporting": range,
+                "Reporting": inrange,
             }
             post = collection.insert_one(insert)
             console.log(
@@ -135,4 +136,14 @@ if __name__ == "__main__":
         nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
         console.log(f"--- Next run: [bold cyan]{nextrun}[/bold cyan] ---")
 
-        sleep(14400)
+        for n in track(range(3600), description="Count down (1 of 4)"):
+            sleep(1)
+
+        for n in track(range(3600), description="Count down (2 of 4)"):
+            sleep(1)
+
+        for n in track(range(3600), description="Count down (3 of 4)"):
+            sleep(1)
+
+        for n in track(range(3600), description="Count down (4 of 4)"):
+            sleep(1)

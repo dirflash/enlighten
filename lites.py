@@ -120,25 +120,10 @@ if __name__ == "__main__":
 
         console.log(f"Next poll in 1 hour: {format(now + timedelta(minutes=60))}")
 
-        # quit()
+        console.log(f"Next poll in 1 hour: {format(now + timedelta(minutes=60))}")
 
-        # pollhours = nextpoll
-        # pollminutes = (nextpoll * 60) % 60
-        # pollseconds = (nextpoll * 3600) % 60
-        # polltime = str(("%d:%02d.%02d" % (pollhours, pollminutes, pollseconds)))
-
-        # coltable.add_row("Next polling time", (polltime))
-
-        # print(f"Next poll at {polltime}")
-        # for n in track(range(3590), description="Waiting..."):
-        # time.sleep(60)
-
-        console.log("[medium_orchid3]sleeping...[/medium_orchid3]")
-        sleep(1190)
-        console.log("45 minutes to next poll")
-        sleep(1200)
-        console.log("30 minutes to next poll")
-        sleep(1200)
-        console.log("15 minutes to next poll")
+        console.log("[medium_orchid3]sleeping for 120 minutes...[/medium_orchid3]")
+        for n in track(range(7200), description="Count down"):
+            sleep(1)
 
     GPIO.cleanup()
