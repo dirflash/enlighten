@@ -118,7 +118,7 @@ if __name__ == "__main__":
         def format(time):
             return time.strftime("%H").lstrip("0") + time.strftime(":%M")
 
-        print(f"Next poll in 1 hour: {format(now + timedelta(minutes=60))}")
+        console.log(f"Next poll in 1 hour: {format(now + timedelta(minutes=60))}")
 
         # quit()
 
@@ -133,12 +133,12 @@ if __name__ == "__main__":
         # for n in track(range(3590), description="Waiting..."):
         # time.sleep(60)
 
-        print("60 minutes to next poll")
+        console.log("[medium_orchid3]sleeping...[/medium_orchid3]")
         sleep(1190)
-        print("45 minutes to next poll")
+        console.log("45 minutes to next poll")
         sleep(1200)
-        print("30 minutes to next poll")
+        console.log("30 minutes to next poll")
         sleep(1200)
-        print("15 minutes to next poll")
+        console.log("15 minutes to next poll")
 
     GPIO.cleanup()
