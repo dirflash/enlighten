@@ -136,14 +136,7 @@ if __name__ == "__main__":
         nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
         console.log(f"--- Next run: [bold cyan]{nextrun}[/bold cyan] ---")
 
-        for n in track(range(3600), description="Count down (1 of 4)"):
-            sleep(1)
-
-        for n in track(range(3600), description="Count down (2 of 4)"):
-            sleep(1)
-
-        for n in track(range(3600), description="Count down (3 of 4)"):
-            sleep(1)
-
-        for n in track(range(3600), description="Count down (4 of 4)"):
-            sleep(1)
+        for t in range(1, 4):
+            print(f"Count down {t}.")
+            for n in track(range(3600), description="Count down", refresh_per_second=1):
+                sleep(1)
