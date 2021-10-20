@@ -19,7 +19,6 @@ from rich.table import Table
 if __name__ == "__main__":
 
     start_time = time()
-    current_epoch = int(time())
 
     console = Console()
 
@@ -66,6 +65,8 @@ if __name__ == "__main__":
     headers = {}
 
     while True:
+        current_epoch = int(time())
+
         response = requests.request("GET", url, headers=headers, data=payload)
         respjson = json.loads(response.text)
         epochlastreport = respjson["last_report_at"]
