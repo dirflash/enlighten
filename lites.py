@@ -83,7 +83,7 @@ if __name__ == "__main__":
         lastrecord = collection.find().sort("_id", -1).limit(1)
         for x in lastrecord:
             sysup = x["Reporting"]
-            # print(f"System reporting: {sysup}")
+            collected = x["Collected"]
 
         coltable = Table(title="Solar DB Statistics", box=box.SIMPLE, style="cyan")
 
@@ -92,6 +92,7 @@ if __name__ == "__main__":
 
         coltable.add_row("Seconds to connect to DB", str(connect_time))
         coltable.add_row("Current reporting", str(sysup))
+        coltable.add_row("Energy collected", str(collected))
 
         if coltable.columns:
             console.print(coltable)
