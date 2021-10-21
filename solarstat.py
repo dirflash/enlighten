@@ -138,5 +138,5 @@ if __name__ == "__main__":
 
         for t in range(1, 4):
             print(f"Count down {t}.")
-            for n in track(range(3600), description="Count down", refresh_per_second=1):
+            for n in track(range(3600), description="Count down", refresh_per_second=2):
                 sleep(1)
