@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
         console.log(f"Next poll in 2 hours: {format(now + timedelta(minutes=120))}")
 
-        console.log("[medium_orchid3]sleeping for 120 minutes...[/medium_orchid3]")
+        console.log("[medium_orchid3]Sleeping for 120 minutes...[/medium_orchid3]")
         for n in track(range(7200), description="Count down", refresh_per_second=2):
             sleep(1)
 
