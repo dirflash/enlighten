@@ -89,11 +89,19 @@ if __name__ == "__main__":
             collected = x["Collected"]
             lastreport = x["EpochLastReport"]
 
+        lrd = (int(time()) - lastreport) / 60
+        lrhrs = int(lrd)
+        lrmins = (lrd * 60) % 60
+        lrsecs = (lrd * 3600) % 60
+        reporteddiff = str(("%d:%02d.%02d" % (lrhrs, lrmins, lrsecs)))
+
+        """
         reportdelay = datetime.today() - timedelta(days=1)
         reportdelaystr = str(reportdelay)
 
         lastreportconv = datetime.fromtimestamp(lastreport) - reportdelay
         reporteddiff = str(lastreportconv).split(".")[0]
+        """
 
         coltable = Table(title="Solar DB Statistics", box=box.SIMPLE, style="cyan")
 
@@ -123,7 +131,7 @@ if __name__ == "__main__":
             GPIO.output(white, GPIO.LOW)
             sleep(10)
 
-        if reportdelaystr < str(lastreport):
+        if lrd > 86400:
             GPIO.output(green, GPIO.LOW)
             GPIO.output(red, GPIO.LOW)
             GPIO.output(white, GPIO.HIGH)
@@ -132,6 +140,9 @@ if __name__ == "__main__":
             )
         else:
             GPIO.output(white, GPIO.LOW)
+            console.log(
+                "[bold bright_yellow] --- System Reporting Timely! ---[/bold bright_yellow]"
+            )
 
         instant = datetime.now()
         nextpoll = instant + timedelta(minutes=60)
