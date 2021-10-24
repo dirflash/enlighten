@@ -29,10 +29,12 @@ if __name__ == "__main__":
     blue = 17
     red = 23
     green = 25
+    white = 12
 
     GPIO.setup(blue, GPIO.OUT)
     GPIO.setup(red, GPIO.OUT)
     GPIO.setup(green, GPIO.OUT)
+    GPIO.setup(white, GPIO.OUT)
 
     config = configparser.ConfigParser()
     config.read("config.ini")
@@ -68,6 +70,7 @@ if __name__ == "__main__":
         GPIO.output(blue, GPIO.LOW)
         GPIO.output(green, GPIO.LOW)
         GPIO.output(red, GPIO.LOW)
+        GPIO.output(white, GPIO.LOW)
 
         try:
             startime = datetime.now()
@@ -84,6 +87,13 @@ if __name__ == "__main__":
         for x in lastrecord:
             sysup = x["Reporting"]
             collected = x["Collected"]
+            lastreport = x["EpochLastReport"]
+
+        reportdelay = datetime.today() - timedelta(days=1)
+        reportdelaystr = str(reportdelay)
+
+        lastreportconv = datetime.fromtimestamp(lastreport) - reportdelay
+        reporteddiff = str(lastreportconv).split(".")[0]
 
         coltable = Table(title="Solar DB Statistics", box=box.SIMPLE, style="cyan")
 
@@ -93,6 +103,7 @@ if __name__ == "__main__":
         coltable.add_row("Seconds to connect to DB", str(connect_time))
         coltable.add_row("Current reporting", str(sysup))
         coltable.add_row("Energy collected", str(collected))
+        coltable.add_row("Since last report", str(reporteddiff))
 
         if coltable.columns:
             console.print(coltable)
@@ -103,12 +114,24 @@ if __name__ == "__main__":
             GPIO.output(green, GPIO.HIGH)
             console.log("[bold green] --- System Green! ---[/bold green]")
             GPIO.output(red, GPIO.LOW)
+            GPIO.output(white, GPIO.LOW)
             sleep(10)
         else:
             GPIO.output(red, GPIO.HIGH)
             console.log("[bold red]--- System Red! ----[/bold red]")
             GPIO.output(green, GPIO.LOW)
+            GPIO.output(white, GPIO.LOW)
             sleep(10)
+
+        if reportdelaystr < str(lastreport):
+            GPIO.output(green, GPIO.LOW)
+            GPIO.output(red, GPIO.LOW)
+            GPIO.output(white, GPIO.HIGH)
+            console.log(
+                "[bold bright_yellow] --- System Reporting Delay! ---[/bold bright_yellow]"
+            )
+        else:
+            GPIO.output(white, GPIO.LOW)
 
         instant = datetime.now()
         nextpoll = instant + timedelta(minutes=60)
