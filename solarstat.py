@@ -20,6 +20,7 @@ from rich.progress import track
 if __name__ == "__main__":
 
     start_time = time()
+    first = True
 
     console = Console()
 
@@ -66,6 +67,11 @@ if __name__ == "__main__":
     headers = {}
 
     while True:
+        if first is False:
+            start_time = time()
+
+        console.log(f"--- First run is : [bold cyan]{first}[/bold cyan] ---")
+
         current_epoch = int(time())
 
         response = requests.request("GET", url, headers=headers, data=payload)
@@ -135,6 +141,8 @@ if __name__ == "__main__":
         ennext = datetime.now() + timedelta(seconds=14400)
         nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
         console.log(f"--- Next run: [bold cyan]{nextrun}[/bold cyan] ---")
+
+        first = False
 
         for t in range(1, 4):
             print(f"Count down {t}.")
