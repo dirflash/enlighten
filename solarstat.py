@@ -181,7 +181,7 @@ if __name__ == "__main__":
         except pymongo.errors.ServerSelectionTimeoutError as err:
             print(err)
 
-        dbprunedelay = 12
+        dbprunedelay = 24
 
         dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
         nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
