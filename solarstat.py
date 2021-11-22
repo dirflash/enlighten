@@ -225,6 +225,10 @@ if __name__ == "__main__":
         first = False
 
         for t in range(1, 4):
-            print(f"Count down {t}.")
-            for n in track(range(3600), description="Count down", refresh_per_second=2):
-                sleep(1)
+            with console.status(
+                "[bold green]Sleeping for 1 hour...", spinner="dots12"
+            ) as status:
+                sleep(3600)
+                console.log(f"[green]Finished sleeping for [/green] {t} hour")
+
+                console.log(f"[bold][red]Done!")
