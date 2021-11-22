@@ -1,5 +1,5 @@
 __author__ = "Aaron Davis"
-__version__ = "0.1.0"
+__version__ = "0.5.0"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
@@ -65,6 +65,54 @@ if __name__ == "__main__":
 
     payload = {}
     headers = {}
+
+    def dbprune():
+        docs = collection.estimated_document_count()
+
+        t = time()
+        easytime = datetime.fromtimestamp(t)
+        ezytime = int(easytime.timestamp())
+
+        minus = t - 345600  # 4-days
+        easytime2 = datetime.fromtimestamp(minus)
+        ezytime2 = int(easytime2.timestamp())
+
+        deldocs = collection.count_documents({"EpochLastReport": {"$lt": ezytime2}})
+
+        coltable = Table(title="Before Statistics", box=box.SIMPLE, style="red")
+
+        coltable.add_column("Type", style="red")
+        coltable.add_column("Data", justify="right", style="red")
+
+        coltable.add_row("Current time", str(ezytime))
+        coltable.add_row("Pruning time", str(ezytime2))
+        coltable.add_row("Number of docs", str(docs))
+        coltable.add_row("Docs to delete", str(deldocs))
+
+        if coltable.columns:
+            console.print(coltable)
+        else:
+            print("[i]No data...[/i]")
+
+        delold = collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
+
+        newdocs = collection.estimated_document_count()
+        docsdel = docs - newdocs
+
+        coltable = Table(title="After Statistics", box=box.SIMPLE, style="cyan")
+
+        coltable.add_column("Type", style="cyan3")
+        coltable.add_column("Data", justify="right", style="cyan3")
+
+        coltable.add_row("Number of docs", str(newdocs))
+        coltable.add_row("Docs deleted", str(docsdel))
+
+        if coltable.columns:
+            console.print(coltable)
+        else:
+            print("[i]No data...[/i]")
+
+        return
 
     while True:
         if first is False:
@@ -133,14 +181,30 @@ if __name__ == "__main__":
         except pymongo.errors.ServerSelectionTimeoutError as err:
             print(err)
 
+        dbprunedelay = 12
+
+        dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
+        nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
+        console.log(f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---")
+
+        if dbprunenext < datetime.now():
+            dbprune()
+        else:
+            countdwn = dbprunenext - datetime.now()
+            console.log(
+                f"--- Next db prune in t-minus: [bold cyan]{countdwn}[/bold cyan] ---"
+            )
+
+        rundelay = 4
+
+        ennext = datetime.now() + timedelta(hours=rundelay)
+        nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
+        console.log(f"--- Next solar data pull: [bold cyan]{nextrun}[/bold cyan] ---")
+
         console.log(
             "--- Script ran in [bold cyan]%.3f seconds[/bold cyan] ---"
             % (time() - start_time)
         )
-
-        ennext = datetime.now() + timedelta(seconds=14400)
-        nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
-        console.log(f"--- Next run: [bold cyan]{nextrun}[/bold cyan] ---")
 
         first = False
 
