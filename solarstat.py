@@ -1,11 +1,12 @@
 __author__ = "Aaron Davis"
-__version__ = "0.5.0"
+__version__ = "0.1.0"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
 import configparser
 import requests
 import json
+import logging
 from time import time, sleep
 from datetime import datetime, timedelta
 import certifi
@@ -16,6 +17,7 @@ from rich import print, box
 from rich.console import Console
 from rich.table import Table
 from rich.progress import track
+from rich.logging import RichHandler
 
 if __name__ == "__main__":
 
@@ -23,6 +25,20 @@ if __name__ == "__main__":
     first = True
 
     console = Console()
+
+    FORMAT = "%(message)s"
+    logging.basicConfig(
+        level="NOTSET", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
+    )
+
+    logging.basicConfig(
+        level="NOTSET",
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)],
+    )
+
+    log = logging.getLogger("rich")
 
     config = configparser.ConfigParser()
     config.read("config.ini")
@@ -162,8 +178,8 @@ if __name__ == "__main__":
 
         try:
             client.admin.command("ping")
-        except ConnectionFailure:
-            print("Server not available")
+        except ConnectionFailure as err:
+            log.exception(err)
 
         try:
             insert = {
@@ -179,7 +195,7 @@ if __name__ == "__main__":
                 style="deep_pink4",
             )
         except pymongo.errors.ServerSelectionTimeoutError as err:
-            print(err)
+            log.exception(err)
 
         dbprunedelay = 24
 
