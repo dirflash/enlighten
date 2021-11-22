@@ -199,8 +199,10 @@ if __name__ == "__main__":
 
         dbprunedelay = 24
 
-        dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
-        nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
+        if first is True:
+            dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
+            nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
+
         console.log(f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---")
 
         if dbprunenext < datetime.now():
