@@ -1,5 +1,5 @@
 __author__ = "Aaron Davis"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
