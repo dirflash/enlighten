@@ -128,7 +128,11 @@ if __name__ == "__main__":
         else:
             print("[i]No data...[/i]")
 
-        return
+        dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
+        nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
+        console.log(f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---")
+
+        return dbprunenext
 
     while True:
         if first is False:
@@ -202,11 +206,12 @@ if __name__ == "__main__":
         if first is True:
             dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
             nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
-
-        console.log(f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---")
+            console.log(
+                f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---"
+            )
 
         if dbprunenext < datetime.now():
-            dbprune()
+            dbprunenext = dbprune()
         else:
             countdwn = dbprunenext - datetime.now()
             console.log(
