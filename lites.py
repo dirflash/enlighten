@@ -1,5 +1,5 @@
 __author__ = "Aaron Davis"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
@@ -16,6 +16,7 @@ from rich import print, box
 from rich.console import Console
 from rich.table import Table
 from rich.progress import track
+from utils.weather import weather
 
 if __name__ == "__main__":
 
@@ -36,13 +37,18 @@ if __name__ == "__main__":
     GPIO.setup(green, GPIO.OUT)
     GPIO.setup(white, GPIO.OUT)
 
+    config_file = "./config.ini"
+
     config = configparser.ConfigParser()
-    config.read("config.ini")
+    config.read(config_file)
     mongoaddr = config["MONGO"]["mongo_addr"]
     mongodb = config["MONGO"]["mongo_db"]
     mongocollect = config["MONGO"]["mongo_collect"]
     mongouser = config["MONGO"]["user_name"]
     mongopw = config["MONGO"]["password"]
+    api = config["WEATHER"]["weather_api"]
+    zip = config["WEATHER"]["zip"]
+    units = config["WEATHER"]["units"]
 
     maxMongoDBDelay = 30000
 
@@ -76,7 +82,6 @@ if __name__ == "__main__":
             startime = datetime.now()
             info = client.server_info()
             pconnect_time = ((str(datetime.now() - startime))[:-4]).replace("0:00:", "")
-            # qconnect_time = pconnect_time.replace("0:00:", "")
             connect_time = "".join(pconnect_time)
 
             GPIO.output(blue, GPIO.HIGH)
@@ -90,18 +95,9 @@ if __name__ == "__main__":
             lastreport = x["EpochLastReport"]
 
         lrd = (int(time()) - lastreport) / 60
-        lrhrs = int(lrd)
-        lrmins = (lrd * 60) % 60
-        lrsecs = (lrd * 3600) % 60
-        reporteddiff = str(("%d:%02d.%02d" % (lrhrs, lrmins, lrsecs)))
-
-        """
-        reportdelay = datetime.today() - timedelta(days=1)
-        reportdelaystr = str(reportdelay)
-
-        lastreportconv = datetime.fromtimestamp(lastreport) - reportdelay
-        reporteddiff = str(lastreportconv).split(".")[0]
-        """
+        lrmins = int(lrd)
+        lrsecs = (lrd * 60) % 60
+        reporteddiff = str(("%02d:%02d" % (lrmins, lrsecs)))
 
         coltable = Table(title="Solar DB Statistics", box=box.SIMPLE, style="cyan")
 
@@ -111,7 +107,7 @@ if __name__ == "__main__":
         coltable.add_row("Seconds to connect to DB", str(connect_time))
         coltable.add_row("Current reporting", str(sysup))
         coltable.add_row("Energy collected", str(collected))
-        coltable.add_row("Since last report", str(reporteddiff))
+        coltable.add_row("Since last report (mmm:ss)", str(reporteddiff))
 
         if coltable.columns:
             console.print(coltable)
@@ -144,6 +140,14 @@ if __name__ == "__main__":
                 "[bold bright_yellow] --- System Reporting Timely! ---[/bold bright_yellow]"
             )
 
+        localviz, collect = weather(api, zip, units)
+
+        if localviz == "day" and collect == "sun":
+            GPIO.output(white, GPIO.HIGH)
+        else:
+            GPIO.output(white, GPIO.LOW)
+            print(localviz + collect)
+
         instant = datetime.now()
         nextpoll = instant + timedelta(minutes=60)
         instup = instant.timetuple()
@@ -155,8 +159,13 @@ if __name__ == "__main__":
 
         console.log(f"Next poll in 2 hours: {format(now + timedelta(minutes=120))}")
 
-        console.log("[medium_orchid3]Sleeping for 120 minutes...[/medium_orchid3]")
-        for n in track(range(7200), description="Count down", refresh_per_second=2):
-            sleep(1)
+        for t in range(1, 2):
+            with console.status(
+                "[bold green]Sleeping for 1 hour...", spinner="dots12"
+            ) as status:
+                sleep(3600)
+                console.log(f"[green]Finished sleeping for [/green] {t} hour")
+
+                console.log(f"[bold][red]Done!")
 
     GPIO.cleanup()
