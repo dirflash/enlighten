@@ -146,7 +146,6 @@ if __name__ == "__main__":
             GPIO.output(white, GPIO.HIGH)
         else:
             GPIO.output(white, GPIO.LOW)
-            print(localviz + collect)
 
         instant = datetime.now()
         nextpoll = instant + timedelta(minutes=60)
