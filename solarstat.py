@@ -1,31 +1,31 @@
+#!/usr/bin/env python3
+"""This script obtains collection information from Envision Solar Panels"""
+
 __author__ = "Aaron Davis"
 __version__ = "0.1.0"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
 import configparser
-import requests
 import json
 import logging
 from time import time, sleep
 from datetime import datetime, timedelta
+import requests
 import certifi
 import pymongo
-import sys
-from utils import weather
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 from rich import print, box
 from rich.console import Console
 from rich.table import Table
-from rich.progress import track
 from rich.logging import RichHandler
 from utils.weather import weather
 
 if __name__ == "__main__":
 
     start_time = time()
-    first = True
+    FIRST_RUN = True
 
     console = Console()
 
@@ -54,10 +54,10 @@ if __name__ == "__main__":
     mongouser = config["MONGO"]["user_name"]
     mongopw = config["MONGO"]["password"]
     api = config["WEATHER"]["weather_api"]
-    zip = config["WEATHER"]["zip"]
+    zip_code = config["WEATHER"]["zip"]
     units = config["WEATHER"]["units"]
 
-    maxMongoDBDelay = 500
+    MAX_MONGODB_DELAY = 500
 
     url = (
         "https://api.enphaseenergy.com/api/v2/systems/"
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         + mongodb
         + "?retryWrites=true&w=majority",
         tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=maxMongoDBDelay,
+        serverSelectionTimeoutMS=MAX_MONGODB_DELAY,
     )
 
     db = client[mongodb]
@@ -89,6 +89,8 @@ if __name__ == "__main__":
     headers = {}
 
     def dbprune():
+        """Clean up old documents in MongoDB"""
+
         docs = collection.estimated_document_count()
 
         t = time()
@@ -101,56 +103,68 @@ if __name__ == "__main__":
 
         deldocs = collection.count_documents({"EpochLastReport": {"$lt": ezytime2}})
 
-        coltable = Table(title="Before Statistics", box=box.SIMPLE, style="red")
+        before_stats_table = Table(
+            title="Before Statistics", box=box.SIMPLE, style="red"
+        )
 
-        coltable.add_column("Type", style="red")
-        coltable.add_column("Data", justify="right", style="red")
+        before_stats_table.add_column("Type", style="red")
+        before_stats_table.add_column("Data", justify="right", style="red")
 
-        coltable.add_row("Current time", str(ezytime))
-        coltable.add_row("Pruning time", str(ezytime2))
-        coltable.add_row("Number of docs", str(docs))
-        coltable.add_row("Docs to delete", str(deldocs))
+        before_stats_table.add_row("Current time", str(ezytime))
+        before_stats_table.add_row("Pruning time", str(ezytime2))
+        before_stats_table.add_row("Number of docs", str(docs))
+        before_stats_table.add_row("Docs to delete", str(deldocs))
 
-        if coltable.columns:
-            console.print(coltable)
+        if before_stats_table.columns:
+            console.print(before_stats_table)
         else:
             print("[i]No data...[/i]")
 
-        delold = collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
+        try:
+            collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
+        except ConnectionFailure as error:
+            log.exception(error)
+
+        # delold = collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
 
         newdocs = collection.estimated_document_count()
         docsdel = docs - newdocs
 
-        coltable = Table(title="After Statistics", box=box.SIMPLE, style="cyan")
+        after_stats_table = Table(
+            title="After Statistics", box=box.SIMPLE, style="cyan"
+        )
 
-        coltable.add_column("Type", style="cyan3")
-        coltable.add_column("Data", justify="right", style="cyan3")
+        after_stats_table.add_column("Type", style="cyan3")
+        after_stats_table.add_column("Data", justify="right", style="cyan3")
 
-        coltable.add_row("Number of docs", str(newdocs))
-        coltable.add_row("Docs deleted", str(docsdel))
+        after_stats_table.add_row("Number of docs", str(newdocs))
+        after_stats_table.add_row("Docs deleted", str(docsdel))
 
-        if coltable.columns:
-            console.print(coltable)
+        if after_stats_table.columns:
+            console.print(after_stats_table)
         else:
             print("[i]No data...[/i]")
 
-        dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
+        dbprunenext = datetime.now() + timedelta(hours=DB_PRUNE_DELAY)
         nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
         console.log(f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---")
 
         return dbprunenext
 
+    def format_time(time):
+        """Format time to make it easier to read"""
+        return time.strftime("%H").lstrip("0") + time.strftime(":%M")
+
     while True:
 
-        # localviz, collect = weather()
-        localviz, collect = weather(api, zip, units)
+        localviz, collect = weather(api, zip_code, units)
 
         if localviz == "day" and collect == "sun":
 
-            if first is False:
+            if FIRST_RUN is False:
                 start_time = time()
 
-            console.log(f"--- First run is : [bold cyan]{first}[/bold cyan] ---")
+            console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
 
             current_epoch = int(time())
 
@@ -165,12 +179,16 @@ if __name__ == "__main__":
             hours = int(lastreportdelta)
             minutes = (lastreportdelta * 60) % 60
             seconds = (lastreportdelta * 3600) % 60
-            lrd = str(("%d:%02d.%02d" % (hours, minutes, seconds)))
+            LAST_REPORTED = str("%d:%02d.%02d" % (hours, minutes, seconds))
 
+            IN_RANGE = lastreportdelta < 86400
+
+            """
             if lastreportdelta < 86400:
                 inrange = True
             else:
                 inrange = False
+            """
 
             epochdelta = current_epoch - epochlastreport
 
@@ -182,8 +200,8 @@ if __name__ == "__main__":
             coltable.add_row("Last report (epoch)", str(epochlastreport))
             coltable.add_row("Current time (epoch)", str(current_epoch))
             coltable.add_row("Delta (epoch)", str(epochdelta))
-            coltable.add_row("Last reported hrs:mins:secs ago", (lrd))
-            coltable.add_row("In range?", str(inrange))
+            coltable.add_row("Last reported hrs:mins:secs ago", (LAST_REPORTED))
+            coltable.add_row("In range?", str(IN_RANGE))
             coltable.add_row("Solar array status", status)
             coltable.add_row("Energy collected", str(collected))
 
@@ -194,8 +212,8 @@ if __name__ == "__main__":
 
             try:
                 client.admin.command("ping")
-            except ConnectionFailure as err:
-                log.exception(err)
+            except ConnectionFailure as error:
+                log.exception(error)
 
             try:
                 insert = {
@@ -203,20 +221,20 @@ if __name__ == "__main__":
                     "LastReport": lastreport,
                     "Collected": collected,
                     "Status": status,
-                    "Reporting": inrange,
+                    "Reporting": IN_RANGE,
                 }
                 post = collection.insert_one(insert)
                 console.log(
-                    "--- Created MongoDB record as {0} ---".format(post.inserted_id),
+                    f"--- Created MongoDB record as {0} ---".format(post.inserted_id),
                     style="deep_pink4",
                 )
-            except pymongo.errors.ServerSelectionTimeoutError as err:
-                log.exception(err)
+            except pymongo.errors.ServerSelectionTimeoutError as error:
+                log.exception(error)
 
-            dbprunedelay = 24
+            DB_PRUNE_DELAY = 24
 
-            if first is True:
-                dbprunenext = datetime.now() + timedelta(hours=dbprunedelay)
+            if FIRST_RUN is True:
+                dbprunenext = datetime.now() + timedelta(hours=DB_PRUNE_DELAY)
                 nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
                 console.log(
                     f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---"
@@ -230,9 +248,9 @@ if __name__ == "__main__":
                     f"--- Next db prune in t-minus: [bold cyan]{countdwn}[/bold cyan] ---"
                 )
 
-            rundelay = 4
+            RUN_DELAY = 4
 
-            ennext = datetime.now() + timedelta(hours=rundelay)
+            ennext = datetime.now() + timedelta(hours=RUN_DELAY)
             nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
             console.log(
                 f"--- Next solar data pull: [bold cyan]{nextrun}[/bold cyan] ---"
@@ -243,13 +261,17 @@ if __name__ == "__main__":
                 % (time() - start_time)
             )
 
-            first = False
+            FIRST_RUN = False
+
+        console.log(
+            f"Next poll in 4 hours: {format_time(datetime.now() + timedelta(minutes=240))}"
+        )
 
         for t in range(1, 4):
             with console.status(
-                "[bold green]Sleeping for 1 hour...", spinner="dots12"
+                "[bold green]Sleeping for 1 hour...[/]", spinner="dots12"
             ) as status:
                 sleep(3600)
-                console.log(f"[green]Finished sleeping for [/green] {t} hour")
+                console.log(f"[green]Finished sleeping for [/green] {t} hour[/]")
 
-                console.log(f"[bold][red]Done!")
+                console.log("[bold][red]Done![/bold][/red]")
