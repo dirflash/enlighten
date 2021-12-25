@@ -122,10 +122,8 @@ if __name__ == "__main__":
 
         try:
             collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
-        except ConnectionFailure as error:
-            log.exception(error)
-
-        # delold = collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
+        except ConnectionFailure as delerr:
+            log.exception(delerr)
 
         newdocs = collection.estimated_document_count()
         docsdel = docs - newdocs
@@ -176,19 +174,13 @@ if __name__ == "__main__":
             collected = respjson["energy_today"]
 
             lastreportdelta = (current_epoch - epochlastreport) / 60
-            hours = int(lastreportdelta)
-            minutes = (lastreportdelta * 60) % 60
-            seconds = (lastreportdelta * 3600) % 60
-            LAST_REPORTED = str("%d:%02d.%02d" % (hours, minutes, seconds))
 
-            IN_RANGE = lastreportdelta < 86400
+            minutes = int(lastreportdelta)
+            seconds = int((lastreportdelta * 60) % 60)
 
-            """
-            if lastreportdelta < 86400:
-                inrange = True
-            else:
-                inrange = False
-            """
+            LAST_REPORTED = str(f"{minutes:02}:{seconds:02}")
+
+            IN_RANGE = lastreportdelta < 86400  # 24 hours
 
             epochdelta = current_epoch - epochlastreport
 
@@ -200,8 +192,8 @@ if __name__ == "__main__":
             coltable.add_row("Last report (epoch)", str(epochlastreport))
             coltable.add_row("Current time (epoch)", str(current_epoch))
             coltable.add_row("Delta (epoch)", str(epochdelta))
-            coltable.add_row("Last reported hrs:mins:secs ago", (LAST_REPORTED))
-            coltable.add_row("In range?", str(IN_RANGE))
+            coltable.add_row("Last reported mins:secs ago", (LAST_REPORTED))
+            coltable.add_row("In range? (<24 hours)", str(IN_RANGE))
             coltable.add_row("Solar array status", status)
             coltable.add_row("Energy collected", str(collected))
 
@@ -243,7 +235,7 @@ if __name__ == "__main__":
             if dbprunenext < datetime.now():
                 dbprunenext = dbprune()
             else:
-                countdwn = dbprunenext - datetime.now()
+                countdwn = str(dbprunenext - datetime.now()).split(".", maxsplit=1)[0]
                 console.log(
                     f"--- Next db prune in t-minus: [bold cyan]{countdwn}[/bold cyan] ---"
                 )
@@ -257,21 +249,19 @@ if __name__ == "__main__":
             )
 
             console.log(
-                "--- Script ran in [bold cyan]%.3f seconds[/bold cyan] ---"
-                % (time() - start_time)
+                f"--- Script ran in [bold cyan]{(time() - start_time):.3f} seconds[/bold cyan] ---"
             )
 
             FIRST_RUN = False
 
         console.log(
-            f"Next poll in 4 hours: {format_time(datetime.now() + timedelta(minutes=240))}"
+            f"--- Next poll in 1 hour: {format_time(datetime.now() + timedelta(minutes=60))} ---"
         )
 
-        for t in range(1, 4):
-            with console.status(
-                "[bold green]Sleeping for 1 hour...[/]", spinner="dots12"
-            ) as status:
-                sleep(3600)
-                console.log(f"[green]Finished sleeping for [/green] {t} hour[/]")
+        with console.status(
+            "[bold green]Sleeping for 1 hour...[/]", spinner="dots12"
+        ) as status:
+            sleep(3600)
+            console.log("[green]Finished sleeping for 1 hour[/green]")
 
-                console.log("[bold][red]Done![/bold][/red]")
+            console.log("[bold][red]Done![/bold][/red]")
