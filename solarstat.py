@@ -155,14 +155,14 @@ if __name__ == "__main__":
 
     while True:
 
+        console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
+
         localviz, collect = weather(api, zip_code, units)
 
         if localviz == "day" and collect == "sun":
 
             if FIRST_RUN is False:
                 start_time = time()
-
-            console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
 
             current_epoch = int(time())
 
@@ -215,44 +215,56 @@ if __name__ == "__main__":
                     "Status": status,
                     "Reporting": IN_RANGE,
                 }
+
                 post = collection.insert_one(insert)
-                console.log(
-                    f"--- Created MongoDB record as {0} ---".format(post.inserted_id),
-                    style="deep_pink4",
-                )
+
+                if post.inserted_id == 0:
+                    console.log(
+                        "--- No MongoDB record created ---",
+                        style="deep_pink4",
+                    )
+                else:
+                    console.log(
+                        f"--- Created MongoDB record as {0} ---".format(
+                            post.inserted_id
+                        ),
+                        style="deep_pink4",
+                    )
             except pymongo.errors.ServerSelectionTimeoutError as error:
                 log.exception(error)
-
-            DB_PRUNE_DELAY = 24
-
-            if FIRST_RUN is True:
-                dbprunenext = datetime.now() + timedelta(hours=DB_PRUNE_DELAY)
-                nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
-                console.log(
-                    f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---"
-                )
-
-            if dbprunenext < datetime.now():
-                dbprunenext = dbprune()
-            else:
-                countdwn = str(dbprunenext - datetime.now()).split(".", maxsplit=1)[0]
-                console.log(
-                    f"--- Next db prune in t-minus: [bold cyan]{countdwn}[/bold cyan] ---"
-                )
-
-            RUN_DELAY = 4
-
-            ennext = datetime.now() + timedelta(hours=RUN_DELAY)
-            nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
+        else:
             console.log(
-                f"--- Next solar data pull: [bold cyan]{nextrun}[/bold cyan] ---"
+                "[bold bright_yellow] --- Waiting for sun! ---[/bold bright_yellow]"
             )
 
+        DB_PRUNE_DELAY = 24
+
+        if FIRST_RUN is True:
+            dbprunenext = datetime.now() + timedelta(hours=DB_PRUNE_DELAY)
+            nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
             console.log(
-                f"--- Script ran in [bold cyan]{(time() - start_time):.3f} seconds[/bold cyan] ---"
+                f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---"
             )
 
-            FIRST_RUN = False
+        if dbprunenext < datetime.now():
+            dbprunenext = dbprune()
+        else:
+            countdwn = str(dbprunenext - datetime.now()).split(".", maxsplit=1)[0]
+            console.log(
+                f"--- Next db prune in t-minus: [bold cyan]{countdwn}[/bold cyan] ---"
+            )
+
+        RUN_DELAY = 1
+
+        ennext = datetime.now() + timedelta(hours=RUN_DELAY)
+        nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
+        console.log(f"--- Next solar data pull: [bold cyan]{nextrun}[/bold cyan] ---")
+
+        console.log(
+            f"--- Script ran in [bold cyan]{(time() - start_time):.3f} seconds[/bold cyan] ---"
+        )
+
+        FIRST_RUN = False
 
         console.log(
             f"--- Next poll in 1 hour: {format_time(datetime.now() + timedelta(minutes=60))} ---"
