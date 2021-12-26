@@ -153,6 +153,8 @@ if __name__ == "__main__":
         """Format time to make it easier to read"""
         return time.strftime("%H").lstrip("0") + time.strftime(":%M")
 
+    start_time = time()
+
     while True:
 
         console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
