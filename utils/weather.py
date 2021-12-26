@@ -1,21 +1,28 @@
-import json
-import requests
-import configparser
+#!/usr/bin/env python3
+"""This script collects weather details"""
+
+__author__ = "Aaron Davis"
+__version__ = "0.1.0"
+__copyright__ = "Copyright (c) 2021 Aaron Davis"
+__license__ = "MIT License"
+
+from time import time
 import sys
+import requests
 from rich import print, box
 from rich.table import Table
 from rich.console import Console
-from time import time
 
 console = Console()
 
 
-def weather(api, zip, units):
+def weather(api, zip_code, units):
+    """Get weather details"""
 
     url = (
         "http://api.openweathermap.org/data/2.5/weather?"
         + "zip="
-        + zip
+        + zip_code
         + "&appid="
         + api
         + "&units="
@@ -43,7 +50,7 @@ def weather(api, zip, units):
 
     localtime = time()
 
-    if localtime > sunrise and localtime < sunset:
+    if sunrise > localtime > sunset:
         localviz = "day"
 
         if weather_id == 800:
@@ -57,13 +64,15 @@ def weather(api, zip, units):
         localviz = "night"
         collect = "no sun"
 
+    collect_msg = collect + " (" + str(weather_id) + ")"
+
     coltable = Table(title="Weather Statistics", box=box.SIMPLE, style="cyan")
 
     coltable.add_column("Type", style="cyan3")
     coltable.add_column("Data", justify="right", style="cyan3")
 
     coltable.add_row("Local Visibility", str(localviz))
-    coltable.add_row("Collectibility", str(collect))
+    coltable.add_row("Collectibility", collect_msg)
 
     if coltable.columns:
         console.print(coltable)
@@ -71,7 +80,3 @@ def weather(api, zip, units):
         print("[i]No data...[/i]")
 
     return (localviz, collect)
-
-
-if __name__ == "__main__":
-    weather(api, zip, units)
