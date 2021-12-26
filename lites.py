@@ -179,7 +179,7 @@ if __name__ == "__main__":
         now = datetime.now()
 
         console.log(
-            f"--- Script ran in [bold cyan]{(time() - start_time):.3f} seconds[/bold cyan] ---"
+            f"--- Script ran in [bold cyan]{(time() - start_time):.3f}[/bold cyan] seconds ---"
         )
 
         FIRST_RUN = False
