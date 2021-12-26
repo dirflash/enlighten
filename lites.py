@@ -1,50 +1,68 @@
+#!/usr/bin/env python3
+"""
+This script retrieves Envision Solar Panels from MongoDB and triggers LED's depending on the status
+"""
+
 __author__ = "Aaron Davis"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
-import RPi.GPIO as GPIO
 import configparser
 from datetime import datetime, timedelta
-from time import time, sleep, strftime, ctime
+from time import time, sleep
 import sys
+from RPi import GPIO
 import certifi
-import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
-from rich import print, box
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich.progress import track
+from utils.weather import weather
+
+
+def format_time(in_time):
+    """Formats time to make it easier to read."""
+    return in_time.strftime("%H").lstrip("0") + in_time.strftime(":%M")
+
 
 if __name__ == "__main__":
 
     start_time = time()
+    FIRST_RUN = True
 
     console = Console()
 
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    blue = 17
-    red = 23
-    green = 25
-    white = 12
+    BLUE = 17
+    RED = 23
+    GREEN = 25
+    WHITE = 12
+    YELLOW = 20
 
-    GPIO.setup(blue, GPIO.OUT)
-    GPIO.setup(red, GPIO.OUT)
-    GPIO.setup(green, GPIO.OUT)
-    GPIO.setup(white, GPIO.OUT)
+    GPIO.setup(BLUE, GPIO.OUT)
+    GPIO.setup(RED, GPIO.OUT)
+    GPIO.setup(GREEN, GPIO.OUT)
+    GPIO.setup(WHITE, GPIO.OUT)
+    GPIO.setup(YELLOW, GPIO.OUT)
+
+    CONFIG_FILE = "./config.ini"
 
     config = configparser.ConfigParser()
-    config.read("config.ini")
+    config.read(CONFIG_FILE)
     mongoaddr = config["MONGO"]["mongo_addr"]
     mongodb = config["MONGO"]["mongo_db"]
     mongocollect = config["MONGO"]["mongo_collect"]
     mongouser = config["MONGO"]["user_name"]
     mongopw = config["MONGO"]["password"]
+    api = config["WEATHER"]["weather_api"]
+    zip_code = config["WEATHER"]["zip"]
+    units = config["WEATHER"]["units"]
 
-    maxMongoDBDelay = 30000
+    MAX_MONGODB_DELAY = 30000
 
     client = MongoClient(
         "mongodb+srv://"
@@ -57,92 +75,97 @@ if __name__ == "__main__":
         + mongodb
         + "?retryWrites=true&w=majority",
         tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=maxMongoDBDelay,
+        serverSelectionTimeoutMS=MAX_MONGODB_DELAY,
     )
 
     db = client[mongodb]
     collection = db[mongocollect]
 
     while True:
+
+        console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
+
+        if FIRST_RUN is False:
+            start_time = time()
+
         console.log("[bold green]--- Recycle for new data ---[/bold green]")
-        now = datetime.now().strftime("%m-%d-%Y %I:%M:%S")
+        now = datetime.now().strftime("%m-%d-%Y %I:%M:%S %p")
         console.log(f"--- Current time: {now} ---")
-        GPIO.output(blue, GPIO.LOW)
-        GPIO.output(green, GPIO.LOW)
-        GPIO.output(red, GPIO.LOW)
-        GPIO.output(white, GPIO.LOW)
+        GPIO.output(BLUE, GPIO.LOW)
+        GPIO.output(GREEN, GPIO.LOW)
+        GPIO.output(RED, GPIO.LOW)
+        GPIO.output(WHITE, GPIO.LOW)
+        GPIO.output(YELLOW, GPIO.LOW)
+        console.log("[bold bright_yellow]--- LED's off! ----[/bold bright_yellow]")
 
-        try:
-            startime = datetime.now()
-            info = client.server_info()
-            pconnect_time = ((str(datetime.now() - startime))[:-4]).replace("0:00:", "")
-            # qconnect_time = pconnect_time.replace("0:00:", "")
-            connect_time = "".join(pconnect_time)
+        localviz, collect = weather(api, zip_code, units)
 
-            GPIO.output(blue, GPIO.HIGH)
-        except ServerSelectionTimeoutError:
-            sys.exit("--- Server not available ---")
+        if localviz == "day" and collect == "sun":
+            GPIO.output(WHITE, GPIO.HIGH)
+            try:
+                startime = time()
+                info = client.server_info()
+                POST_CONNECT = time() - startime
+                connect_seconds = int(POST_CONNECT)
+                connect_milli = int((POST_CONNECT * 60) % 60)
+                CONNECT_TIME = str(f"{connect_seconds:02}.{connect_milli:02}")
+                GPIO.output(BLUE, GPIO.HIGH)
+            except ServerSelectionTimeoutError:
+                sys.exit("--- Server not available ---")
 
-        lastrecord = collection.find().sort("_id", -1).limit(1)
-        for x in lastrecord:
-            sysup = x["Reporting"]
-            collected = x["Collected"]
-            lastreport = x["EpochLastReport"]
+            lastrecord = collection.find().sort("_id", -1).limit(1)
+            for x in lastrecord:
+                sysup = x["Reporting"]
+                collected = x["Collected"]
+                lastreport = x["EpochLastReport"]
 
-        lrd = (int(time()) - lastreport) / 60
-        lrhrs = int(lrd)
-        lrmins = (lrd * 60) % 60
-        lrsecs = (lrd * 3600) % 60
-        reporteddiff = str(("%d:%02d.%02d" % (lrhrs, lrmins, lrsecs)))
+            lrd = time() - lastreport
+            REPORTED_DIFF = str(timedelta(seconds=lrd)).split(".", maxsplit=1)[0]
 
-        """
-        reportdelay = datetime.today() - timedelta(days=1)
-        reportdelaystr = str(reportdelay)
-
-        lastreportconv = datetime.fromtimestamp(lastreport) - reportdelay
-        reporteddiff = str(lastreportconv).split(".")[0]
-        """
-
-        coltable = Table(title="Solar DB Statistics", box=box.SIMPLE, style="cyan")
-
-        coltable.add_column("Type", style="cyan3")
-        coltable.add_column("Data", justify="right", style="cyan3")
-
-        coltable.add_row("Seconds to connect to DB", str(connect_time))
-        coltable.add_row("Current reporting", str(sysup))
-        coltable.add_row("Energy collected", str(collected))
-        coltable.add_row("Since last report", str(reporteddiff))
-
-        if coltable.columns:
-            console.print(coltable)
-        else:
-            console.log("[i]--- No data... ---[/i]")
-
-        if sysup is True:
-            GPIO.output(green, GPIO.HIGH)
-            console.log("[bold green] --- System Green! ---[/bold green]")
-            GPIO.output(red, GPIO.LOW)
-            GPIO.output(white, GPIO.LOW)
-            sleep(10)
-        else:
-            GPIO.output(red, GPIO.HIGH)
-            console.log("[bold red]--- System Red! ----[/bold red]")
-            GPIO.output(green, GPIO.LOW)
-            GPIO.output(white, GPIO.LOW)
-            sleep(10)
-
-        if lrd > 86400:
-            GPIO.output(green, GPIO.LOW)
-            GPIO.output(red, GPIO.LOW)
-            GPIO.output(white, GPIO.HIGH)
-            console.log(
-                "[bold bright_yellow] --- System Reporting Delay! ---[/bold bright_yellow]"
+            db_stats_table = Table(
+                title="Solar DB Statistics", box=box.SIMPLE, style="cyan"
             )
+
+            db_stats_table.add_column("Type", style="cyan3")
+            db_stats_table.add_column("Data", justify="right", style="cyan3")
+
+            db_stats_table.add_row("Seconds to connect to DB", CONNECT_TIME)
+            db_stats_table.add_row("Current reporting", str(sysup))
+            db_stats_table.add_row("Energy collected", str(collected))
+            db_stats_table.add_row("Since last report", str(REPORTED_DIFF))
+
+            if db_stats_table.columns:
+                console.print(db_stats_table)
+            else:
+                console.log("[i]--- No data... ---[/i]")
+
+            if sysup is True:
+                GPIO.output(GREEN, GPIO.HIGH)
+                console.log(f"--- [bold green] --- Green LED on! ---[/bold green] ---")
+                console.log("[bold green] --- System Green! ---[/bold green]")
+                sleep(10)
+            else:
+                GPIO.output(RED, GPIO.HIGH)
+                console.log("[bold red]--- Red LED on! ----[/bold red]")
+                console.log("[bold red]--- System Red! ----[/bold red]")
+                sleep(10)
+
+            if lrd > 86400:
+                GPIO.output(RED, GPIO.HIGH)
+                console.log("[bold red]--- Red LED on! ----[/bold red]")
+                console.log("[bold red] --- System Reporting Delay! ---[/bold red]")
+            else:
+                GPIO.output(WHITE, GPIO.HIGH)
+                console.log("[bold white]--- White LED on! ----[/bold white]")
+                console.log(
+                    "[bold white] --- System Reporting Timely! ---[/bold white]"
+                )
         else:
-            GPIO.output(white, GPIO.LOW)
+            GPIO.output(YELLOW, GPIO.HIGH)
             console.log(
-                "[bold bright_yellow] --- System Reporting Timely! ---[/bold bright_yellow]"
+                "[bold bright_yellow]--- Waiting for sun! ---[/bold bright_yellow]"
             )
+            console.log("[bright_yellow]--- Yellow LED on! ----[/bright_yellow]")
 
         instant = datetime.now()
         nextpoll = instant + timedelta(minutes=60)
@@ -150,13 +173,24 @@ if __name__ == "__main__":
 
         now = datetime.now()
 
-        def format(time):
-            return time.strftime("%H").lstrip("0") + time.strftime(":%M")
+        console.log(
+            f"--- Script ran in [bold cyan]{(time() - start_time):.3f}[/bold cyan] seconds ---"
+        )
 
-        console.log(f"Next poll in 2 hours: {format(now + timedelta(minutes=120))}")
+        FIRST_RUN = False
 
-        console.log("[medium_orchid3]Sleeping for 120 minutes...[/medium_orchid3]")
-        for n in track(range(7200), description="Count down", refresh_per_second=2):
-            sleep(1)
+        console.log(
+            f"Next poll in 30 minutes: {format_time(now + timedelta(minutes=30))}"
+        )
+
+        with console.status(
+            "[bold green]Sleeping for 30 minutes...", spinner="dots12"
+        ) as status:
+            sleep(1800)
+            console.log(
+                "[green]Finished sleeping for [/green] 30 [green]minutes[/green]"
+            )
+
+            console.log("[bold][red]Done![/]")
 
     GPIO.cleanup()
