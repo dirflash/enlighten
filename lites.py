@@ -1,53 +1,57 @@
 #!/usr/bin/env python3
-"""This script obtains collection information from Envision Solar Panels"""
+"""
+This script retrieves Envision Solar Panels from MongoDB and triggers LED's depending on the status
+"""
 
 __author__ = "Aaron Davis"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
 import configparser
-import json
-import logging
-from time import time, sleep
 from datetime import datetime, timedelta
-import requests
+from time import time, sleep
+import sys
+from RPi import GPIO
 import certifi
-import pymongo
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
-from rich import print, box
+from pymongo.errors import ServerSelectionTimeoutError
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich.logging import RichHandler
 from utils.weather import weather
+
+
+def format_time(in_time):
+    """Formats time to make it easier to read."""
+    return in_time.strftime("%H").lstrip("0") + in_time.strftime(":%M")
+
 
 if __name__ == "__main__":
 
     start_time = time()
-    FIRST_RUN = True
 
     console = Console()
 
-    FORMAT = "%(message)s"
-    logging.basicConfig(
-        level="NOTSET", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
-    )
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
 
-    logging.basicConfig(
-        level="NOTSET",
-        format="%(message)s",
-        datefmt="[%X]",
-        handlers=[RichHandler(rich_tracebacks=True)],
-    )
+    BLUE = 17
+    RED = 23
+    GREEN = 25
+    WHITE = 12
+    YELLOW = 20
 
-    log = logging.getLogger("rich")
+    GPIO.setup(BLUE, GPIO.OUT)
+    GPIO.setup(RED, GPIO.OUT)
+    GPIO.setup(GREEN, GPIO.OUT)
+    GPIO.setup(WHITE, GPIO.OUT)
+    GPIO.setup(YELLOW, GPIO.OUT)
+
+    CONFIG_FILE = "./config.ini"
 
     config = configparser.ConfigParser()
-    config.read("config.ini")
-    key = config["DEFAULT"]["key"]
-    user = config["DEFAULT"]["user_id"]
-    system = config["DEFAULT"]["system"]
+    config.read(CONFIG_FILE)
     mongoaddr = config["MONGO"]["mongo_addr"]
     mongodb = config["MONGO"]["mongo_db"]
     mongocollect = config["MONGO"]["mongo_collect"]
@@ -57,16 +61,7 @@ if __name__ == "__main__":
     zip_code = config["WEATHER"]["zip"]
     units = config["WEATHER"]["units"]
 
-    MAX_MONGODB_DELAY = 500
-
-    url = (
-        "https://api.enphaseenergy.com/api/v2/systems/"
-        + system
-        + "/summary?key="
-        + key
-        + "&user_id="
-        + user
-    )
+    MAX_MONGODB_DELAY = 30000
 
     client = MongoClient(
         "mongodb+srv://"
@@ -85,195 +80,106 @@ if __name__ == "__main__":
     db = client[mongodb]
     collection = db[mongocollect]
 
-    payload = {}
-    headers = {}
-
-    def dbprune():
-        """Clean up old documents in MongoDB"""
-
-        docs = collection.estimated_document_count()
-
-        t = time()
-        easytime = datetime.fromtimestamp(t)
-        ezytime = int(easytime.timestamp())
-
-        minus = t - 345600  # 4-days
-        easytime2 = datetime.fromtimestamp(minus)
-        ezytime2 = int(easytime2.timestamp())
-
-        deldocs = collection.count_documents({"EpochLastReport": {"$lt": ezytime2}})
-
-        before_stats_table = Table(
-            title="Before Statistics", box=box.SIMPLE, style="red"
-        )
-
-        before_stats_table.add_column("Type", style="red")
-        before_stats_table.add_column("Data", justify="right", style="red")
-
-        before_stats_table.add_row("Current time", str(ezytime))
-        before_stats_table.add_row("Pruning time", str(ezytime2))
-        before_stats_table.add_row("Number of docs", str(docs))
-        before_stats_table.add_row("Docs to delete", str(deldocs))
-
-        if before_stats_table.columns:
-            console.print(before_stats_table)
-        else:
-            print("[i]No data...[/i]")
-
-        try:
-            collection.delete_many({"EpochLastReport": {"$lt": ezytime2}})
-        except ConnectionFailure as delerr:
-            log.exception(delerr)
-
-        newdocs = collection.estimated_document_count()
-        docsdel = docs - newdocs
-
-        after_stats_table = Table(
-            title="After Statistics", box=box.SIMPLE, style="cyan"
-        )
-
-        after_stats_table.add_column("Type", style="cyan3")
-        after_stats_table.add_column("Data", justify="right", style="cyan3")
-
-        after_stats_table.add_row("Number of docs", str(newdocs))
-        after_stats_table.add_row("Docs deleted", str(docsdel))
-
-        if after_stats_table.columns:
-            console.print(after_stats_table)
-        else:
-            print("[i]No data...[/i]")
-
-        dbprunenext = datetime.now() + timedelta(hours=DB_PRUNE_DELAY)
-        nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
-        console.log(f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---")
-
-        return dbprunenext
-
-    def format_time(time):
-        """Format time to make it easier to read"""
-        return time.strftime("%H").lstrip("0") + time.strftime(":%M")
-
     while True:
-
-        console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
+        console.log("[bold green]--- Recycle for new data ---[/bold green]")
+        now = datetime.now().strftime("%m-%d-%Y %I:%M:%S %p")
+        console.log(f"--- Current time: {now} ---")
+        GPIO.output(BLUE, GPIO.LOW)
+        GPIO.output(GREEN, GPIO.LOW)
+        GPIO.output(RED, GPIO.LOW)
+        GPIO.output(WHITE, GPIO.LOW)
+        GPIO.output(YELLOW, GPIO.LOW)
 
         localviz, collect = weather(api, zip_code, units)
 
         if localviz == "day" and collect == "sun":
+            GPIO.output(WHITE, GPIO.HIGH)
+            try:
+                startime = time()
+                info = client.server_info()
+                POST_CONNECT = time() - startime
+                connect_seconds = int(POST_CONNECT)
+                connect_milli = int((POST_CONNECT * 60) % 60)
+                CONNECT_TIME = str(f"{connect_seconds:02}.{connect_milli:02}")
+                GPIO.output(BLUE, GPIO.HIGH)
+            except ServerSelectionTimeoutError:
+                sys.exit("--- Server not available ---")
 
-            if FIRST_RUN is False:
-                start_time = time()
+            lastrecord = collection.find().sort("_id", -1).limit(1)
+            for x in lastrecord:
+                sysup = x["Reporting"]
+                collected = x["Collected"]
+                lastreport = x["EpochLastReport"]
 
-            current_epoch = int(time())
+            lrd = time() - lastreport
+            REPORTED_DIFF = str(timedelta(seconds=lrd)).split(".", maxsplit=1)[0]
 
-            response = requests.request("GET", url, headers=headers, data=payload)
-            respjson = json.loads(response.text)
-            epochlastreport = respjson["last_report_at"]
-            lastreport = datetime.fromtimestamp(int(respjson["last_report_at"]))
-            status = respjson["status"]
-            collected = respjson["energy_today"]
+            db_stats_table = Table(
+                title="Solar DB Statistics", box=box.SIMPLE, style="cyan"
+            )
 
-            lastreportdelta = (current_epoch - epochlastreport) / 60
+            db_stats_table.add_column("Type", style="cyan3")
+            db_stats_table.add_column("Data", justify="right", style="cyan3")
 
-            minutes = int(lastreportdelta)
-            seconds = int((lastreportdelta * 60) % 60)
+            db_stats_table.add_row("Seconds to connect to DB", CONNECT_TIME)
+            db_stats_table.add_row("Current reporting", str(sysup))
+            db_stats_table.add_row("Energy collected", str(collected))
+            db_stats_table.add_row("Since last report", str(REPORTED_DIFF))
 
-            LAST_REPORTED = str(f"{minutes:02}:{seconds:02}")
-
-            IN_RANGE = lastreportdelta < 86400  # 24 hours
-
-            epochdelta = current_epoch - epochlastreport
-
-            coltable = Table(title="Solar Statistics", box=box.SIMPLE, style="cyan")
-
-            coltable.add_column("Type", style="cyan3")
-            coltable.add_column("Data", justify="right", style="cyan3")
-
-            coltable.add_row("Last report (epoch)", str(epochlastreport))
-            coltable.add_row("Current time (epoch)", str(current_epoch))
-            coltable.add_row("Delta (epoch)", str(epochdelta))
-            coltable.add_row("Last reported mins:secs ago", (LAST_REPORTED))
-            coltable.add_row("In range? (<24 hours)", str(IN_RANGE))
-            coltable.add_row("Solar array status", status)
-            coltable.add_row("Energy collected", str(collected))
-
-            if coltable.columns:
-                console.print(coltable)
+            if db_stats_table.columns:
+                console.print(db_stats_table)
             else:
-                print("[i]No data...[/i]")
+                console.log("[i]--- No data... ---[/i]")
 
-            try:
-                client.admin.command("ping")
-            except ConnectionFailure as error:
-                log.exception(error)
+            if sysup is True:
+                GPIO.output(GREEN, GPIO.HIGH)
+                console.log("[bold green] --- System Green! ---[/bold green]")
+                GPIO.output(RED, GPIO.LOW)
+                GPIO.output(WHITE, GPIO.LOW)
+                sleep(10)
+            else:
+                GPIO.output(RED, GPIO.HIGH)
+                console.log("[bold red]--- System Red! ----[/bold red]")
+                GPIO.output(GREEN, GPIO.LOW)
+                GPIO.output(WHITE, GPIO.LOW)
+                sleep(10)
 
-            try:
-                insert = {
-                    "EpochLastReport": epochlastreport,
-                    "LastReport": lastreport,
-                    "Collected": collected,
-                    "Status": status,
-                    "Reporting": IN_RANGE,
-                }
-
-                post = collection.insert_one(insert)
-
-                if post.inserted_id == 0:
-                    console.log(
-                        "--- No MongoDB record created ---",
-                        style="deep_pink4",
-                    )
-                else:
-                    console.log(
-                        f"--- Created MongoDB record as {0} ---".format(
-                            post.inserted_id
-                        ),
-                        style="deep_pink4",
-                    )
-            except pymongo.errors.ServerSelectionTimeoutError as error:
-                log.exception(error)
+            if lrd > 86400:
+                GPIO.output(GREEN, GPIO.LOW)
+                GPIO.output(RED, GPIO.LOW)
+                GPIO.output(WHITE, GPIO.HIGH)
+                console.log(
+                    "[bold bright_yellow] --- System Reporting Delay! ---[/bold bright_yellow]"
+                )
+            else:
+                GPIO.output(WHITE, GPIO.LOW)
+                console.log(
+                    "[bold bright_yellow] --- System Reporting Timely! ---[/bold bright_yellow]"
+                )
         else:
+            GPIO.output(YELLOW, GPIO.HIGH)
             console.log(
                 "[bold bright_yellow] --- Waiting for sun! ---[/bold bright_yellow]"
             )
 
-        DB_PRUNE_DELAY = 24
+        instant = datetime.now()
+        nextpoll = instant + timedelta(minutes=60)
+        instup = instant.timetuple()
 
-        if FIRST_RUN is True:
-            dbprunenext = datetime.now() + timedelta(hours=DB_PRUNE_DELAY)
-            nextrundb = dbprunenext.strftime("%m-%d-%Y %H:%M:%S")
-            console.log(
-                f"--- Next db clean-up run: [bold cyan]{nextrundb}[/bold cyan] ---"
-            )
-
-        if dbprunenext < datetime.now():
-            dbprunenext = dbprune()
-        else:
-            countdwn = str(dbprunenext - datetime.now()).split(".", maxsplit=1)[0]
-            console.log(
-                f"--- Next db prune in t-minus: [bold cyan]{countdwn}[/bold cyan] ---"
-            )
-
-        RUN_DELAY = 1
-
-        ennext = datetime.now() + timedelta(hours=RUN_DELAY)
-        nextrun = ennext.strftime("%m-%d-%Y %H:%M:%S")
-        console.log(f"--- Next solar data pull: [bold cyan]{nextrun}[/bold cyan] ---")
+        now = datetime.now()
 
         console.log(
-            f"--- Script ran in [bold cyan]{(time() - start_time):.3f} seconds[/bold cyan] ---"
-        )
-
-        FIRST_RUN = False
-
-        console.log(
-            f"--- Next poll in 1 hour: {format_time(datetime.now() + timedelta(minutes=60))} ---"
+            f"Next poll in 30 minutes: {format_time(now + timedelta(minutes=30))}"
         )
 
         with console.status(
-            "[bold green]Sleeping for 1 hour...[/]", spinner="dots12"
+            "[bold green]Sleeping for 30 minutes...", spinner="dots12"
         ) as status:
-            sleep(3600)
-            console.log("[green]Finished sleeping for 1 hour[/green]")
+            sleep(1800)
+            console.log(
+                "[green]Finished sleeping for [/green] 30 [green]minutes[/green]"
+            )
 
-            console.log("[bold][red]Done![/bold][/red]")
+            console.log("[bold][red]Done![/]")
+
+    GPIO.cleanup()
