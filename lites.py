@@ -140,12 +140,14 @@ if __name__ == "__main__":
 
             if sysup is True:
                 GPIO.output(GREEN, GPIO.HIGH)
+                console.log(f"--- [bold green] --- Green LED on! ---[/bold green] ---")
                 console.log("[bold green] --- System Green! ---[/bold green]")
                 GPIO.output(RED, GPIO.LOW)
                 GPIO.output(WHITE, GPIO.LOW)
                 sleep(10)
             else:
                 GPIO.output(RED, GPIO.HIGH)
+                console.log("[bold red]--- Red LED on! ----[/bold red]")
                 console.log("[bold red]--- System Red! ----[/bold red]")
                 GPIO.output(GREEN, GPIO.LOW)
                 GPIO.output(WHITE, GPIO.LOW)
@@ -153,21 +155,22 @@ if __name__ == "__main__":
 
             if lrd > 86400:
                 GPIO.output(GREEN, GPIO.LOW)
-                GPIO.output(RED, GPIO.LOW)
-                GPIO.output(WHITE, GPIO.HIGH)
-                console.log(
-                    "[bold bright_yellow] --- System Reporting Delay! ---[/bold bright_yellow]"
-                )
+                GPIO.output(RED, GPIO.HIGH)
+                GPIO.output(WHITE, GPIO.LOW)
+                console.log("[bold red]--- Red LED on! ----[/bold red]")
+                console.log("[bold red] --- System Reporting Delay! ---[/bold red]")
             else:
                 GPIO.output(WHITE, GPIO.LOW)
+                console.log("[bold white]--- White LED on! ----[/bold white]")
                 console.log(
-                    "[bold bright_yellow] --- System Reporting Timely! ---[/bold bright_yellow]"
+                    "[bold white] --- System Reporting Timely! ---[/bold white]"
                 )
         else:
             GPIO.output(YELLOW, GPIO.HIGH)
             console.log(
-                "[bold bright_yellow] --- Waiting for sun! ---[/bold bright_yellow]"
+                "[bold bright_yellow]--- Waiting for sun! ---[/bold bright_yellow]"
             )
+            console.log("[bright_yellow]--- Yellow LED on! ----[/bright_yellow]")
 
         instant = datetime.now()
         nextpoll = instant + timedelta(minutes=60)
@@ -195,4 +198,5 @@ if __name__ == "__main__":
 
             console.log("[bold][red]Done![/]")
 
-    GPIO.cleanup()
+        GPIO.cleanup()
+        console.log("[bold bright_yellow]--- LED's off! ----[/bold bright_yellow]")
