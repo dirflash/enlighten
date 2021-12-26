@@ -159,12 +159,12 @@ if __name__ == "__main__":
 
         console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
 
+        if FIRST_RUN is False:
+            start_time = time()
+
         localviz, collect = weather(api, zip_code, units)
 
         if localviz == "day" and collect == "sun":
-
-            if FIRST_RUN is False:
-                start_time = time()
 
             current_epoch = int(time())
 
