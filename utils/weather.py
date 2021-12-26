@@ -50,12 +50,12 @@ def weather(api, zip_code, units):
 
     localtime = time()
 
-    if sunrise > localtime > sunset:
+    if sunset > localtime > sunrise:
         localviz = "day"
 
         if weather_id == 800:
             collect = "sun"
-        elif weather_id > 800 and weather_id < 804:
+        elif 804 > weather_id > 800:
             collect = "sun"
         else:
             collect = "no sun"
