@@ -96,6 +96,7 @@ if __name__ == "__main__":
         GPIO.output(RED, GPIO.LOW)
         GPIO.output(WHITE, GPIO.LOW)
         GPIO.output(YELLOW, GPIO.LOW)
+        console.log("[bold bright_yellow]--- LED's off! ----[/bold bright_yellow]")
 
         localviz, collect = weather(api, zip_code, units)
 
@@ -192,5 +193,4 @@ if __name__ == "__main__":
 
             console.log("[bold][red]Done![/]")
 
-        GPIO.cleanup()
-        console.log("[bold bright_yellow]--- LED's off! ----[/bold bright_yellow]")
+    GPIO.cleanup()
