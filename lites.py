@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
             if sysup is True:
                 GPIO.output(GREEN, GPIO.HIGH)
-                console.log(f"[bold green]--- Green LED on! ---[/bold green]")
+                console.log("[bold green]--- Green LED on! ---[/bold green]")
                 console.log("[bold green]--- System Up! ---[/bold green]")
                 sleep(10)
             else:
