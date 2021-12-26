@@ -30,6 +30,7 @@ def format_time(in_time):
 if __name__ == "__main__":
 
     start_time = time()
+    FIRST_RUN = True
 
     console = Console()
 
@@ -81,6 +82,12 @@ if __name__ == "__main__":
     collection = db[mongocollect]
 
     while True:
+
+        console.log(f"--- First run is : [bold cyan]{FIRST_RUN}[/bold cyan] ---")
+
+        if FIRST_RUN is False:
+            start_time = time()
+
         console.log("[bold green]--- Recycle for new data ---[/bold green]")
         now = datetime.now().strftime("%m-%d-%Y %I:%M:%S %p")
         console.log(f"--- Current time: {now} ---")
@@ -167,6 +174,12 @@ if __name__ == "__main__":
         instup = instant.timetuple()
 
         now = datetime.now()
+
+        console.log(
+            f"--- Script ran in [bold cyan]{(time() - start_time):.3f} seconds[/bold cyan] ---"
+        )
+
+        FIRST_RUN = False
 
         console.log(
             f"Next poll in 30 minutes: {format_time(now + timedelta(minutes=30))}"
