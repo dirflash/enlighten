@@ -178,7 +178,7 @@ if __name__ == "__main__":
         FIRST_RUN = False
 
         console.log(
-            f"Next poll in 30 minutes: {format_time(now + timedelta(minutes=30))}"
+            f"--- Next poll in 30 minutes: {format_time(now + timedelta(minutes=30))} ---"
         )
 
         with console.status(
