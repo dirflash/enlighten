@@ -6,5 +6,6 @@
 *.ini
 *.log
 *.bat
+*.tmp
 __pycache__
 logs/**
