@@ -130,7 +130,7 @@ if __name__ == "__main__":
             db_stats_table.add_column("Data", justify="right", style="cyan3")
 
             db_stats_table.add_row("Seconds to connect to DB", CONNECT_TIME)
-            db_stats_table.add_row("Current reporting", str(sysup))
+            db_stats_table.add_row("Reporting", str(sysup))
             db_stats_table.add_row("Energy collected", str(collected))
             db_stats_table.add_row("Since last report", str(REPORTED_DIFF))
 
@@ -141,8 +141,8 @@ if __name__ == "__main__":
 
             if sysup is True:
                 GPIO.output(GREEN, GPIO.HIGH)
-                console.log(f"--- [bold green] --- Green LED on! ---[/bold green] ---")
-                console.log("[bold green] --- System Up! ---[/bold green]")
+                console.log(f"[bold green]--- Green LED on! ---[/bold green]")
+                console.log("[bold green]--- System Up! ---[/bold green]")
                 sleep(10)
             else:
                 GPIO.output(RED, GPIO.HIGH)
@@ -153,13 +153,11 @@ if __name__ == "__main__":
             if lrd > 86400:
                 GPIO.output(RED, GPIO.HIGH)
                 console.log("[bold red]--- Red LED on! ----[/bold red]")
-                console.log("[bold red] --- System Reporting Delay! ---[/bold red]")
+                console.log("[bold red]--- System Reporting Delay! ---[/bold red]")
             else:
                 GPIO.output(WHITE, GPIO.HIGH)
                 console.log("[bold white]--- White LED on! ----[/bold white]")
-                console.log(
-                    "[bold white] --- System Reporting Timely! ---[/bold white]"
-                )
+                console.log("[bold white]--- System Reporting Timely! ---[/bold white]")
         else:
             GPIO.output(YELLOW, GPIO.HIGH)
             console.log(
