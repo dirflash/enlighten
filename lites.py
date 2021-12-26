@@ -142,12 +142,12 @@ if __name__ == "__main__":
             if sysup is True:
                 GPIO.output(GREEN, GPIO.HIGH)
                 console.log(f"--- [bold green] --- Green LED on! ---[/bold green] ---")
-                console.log("[bold green] --- System Green! ---[/bold green]")
+                console.log("[bold green] --- System Up! ---[/bold green]")
                 sleep(10)
             else:
                 GPIO.output(RED, GPIO.HIGH)
                 console.log("[bold red]--- Red LED on! ----[/bold red]")
-                console.log("[bold red]--- System Red! ----[/bold red]")
+                console.log("[bold red]--- System Down! ----[/bold red]")
                 sleep(10)
 
             if lrd > 86400:
