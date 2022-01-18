@@ -40,11 +40,15 @@ def retrieve_weather(url):
         status = response.status_code
         if status == 401:
             print("[orange1]Invalid API key.[/]")
+            sys.exit(1)
         elif status == 404:
             print("[orange1]Invalid input.[/]")
+            sys.exit(1)
         elif status in (429, 443):
             print("[orange1]API calls per minute exceeded.[/]")
-        sys.exit(1)
+            response = "error"
+            status_code = 0
+            timeout = True
     return (response, status_code, timeout)
 
 
