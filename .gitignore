@@ -10,3 +10,4 @@ launch.json
 *.tmp
 __pycache__
 logs/**
+config/**
