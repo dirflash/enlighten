@@ -16,7 +16,7 @@ import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
-from rich import print, box
+from rich import print, box  # pylint: disable=redefined-builtin
 from rich.console import Console
 from rich.table import Table
 from rich.logging import RichHandler
