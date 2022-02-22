@@ -11,8 +11,8 @@ import configparser
 import sys
 import requests
 from requests.exceptions import Timeout
-from requests.exceptions import ConnectionError
-from rich import print, box
+from requests.exceptions import ConnectionError  # pylint: disable=redefined-builtin
+from rich import print, box  # pylint: disable=redefined-builtin
 from rich.table import Table
 from rich.console import Console
 
