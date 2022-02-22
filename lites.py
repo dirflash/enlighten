@@ -37,7 +37,7 @@ if __name__ == "__main__":
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    BLUE = 17
+    BLUE = 18
     RED = 23
     GREEN = 25
     WHITE = 12
