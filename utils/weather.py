@@ -9,6 +9,7 @@ __license__ = "MIT License"
 from time import time, sleep
 import configparser
 import sys
+import os
 import requests
 from requests.exceptions import Timeout
 from requests.exceptions import ConnectionError  # pylint: disable=redefined-builtin
@@ -122,8 +123,9 @@ def weather(api, zip_code, units):
 
 
 if __name__ == "__main__":
+    config_file = os.path.abspath(r"c:\code\enlighten\enlighten\config.ini")
     config = configparser.ConfigParser()
-    config.read("./config/config.ini")
+    config.read(config_file)
     api = config["WEATHER"]["weather_api"]
     zip_code = config["WEATHER"]["zip"]
     units = config["WEATHER"]["units"]
