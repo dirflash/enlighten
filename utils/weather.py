@@ -76,7 +76,7 @@ def weather(api, zip_code, units):
         ) as status:
             sleep(1800)
             console.log("[green]Finished sleeping. Try again.[/green]")
-        response = retrieve_weather(url)
+        response, status_code, timeout = retrieve_weather(url)
 
     if timeout is False:
         if status_code == 200:
