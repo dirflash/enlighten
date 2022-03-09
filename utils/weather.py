@@ -3,7 +3,7 @@
 
 __author__ = "Aaron Davis"
 __version__ = "0.1.0"
-__copyright__ = "Copyright (c) 2021 Aaron Davis"
+__copyright__ = "Copyright (c) 2022 Aaron Davis"
 __license__ = "MIT License"
 
 from time import time, sleep
@@ -28,9 +28,7 @@ def retrieve_weather(url):
         status_code = response.status_code
         response.raise_for_status()
     except Timeout:
-        print(
-            f"[red bold]The 'get weather' request timed out with status code {status_code}![/]"
-        )
+        print(f"[red bold]The 'get weather' request timed out![/]")
         response = "error"
         status_code = 0
         timeout = True
@@ -57,6 +55,7 @@ def retrieve_weather(url):
 
 def weather(api, zip_code, units):
     """Get weather details"""
+    console.log("[green]Entered weather function.[/]")
 
     url = (
         "http://api.openweathermap.org/data/2.5/weather?"
@@ -70,7 +69,7 @@ def weather(api, zip_code, units):
 
     response, status_code, timeout = retrieve_weather(url)
 
-    while timeout is True:
+    if timeout is True:
         with console.status(
             "[bold green]Sleeping for 30 minutes...[/]", spinner="dots12"
         ) as status:
@@ -120,6 +119,8 @@ def weather(api, zip_code, units):
             console.print(coltable)
         else:
             print("[i]No data...[/i]")
+
+        console.log("[green]Exiting weather function.[/]")
 
         return (localviz, collect)
 
