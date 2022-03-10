@@ -28,7 +28,7 @@ def retrieve_weather(url):
         status_code = response.status_code
         response.raise_for_status()
     except Timeout:
-        print(f"[red bold]The 'get weather' request timed out![/]")
+        print("[red bold]The 'get weather' request timed out![/]")
         response = "error"
         status_code = 0
         timeout = True
