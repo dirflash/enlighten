@@ -16,7 +16,7 @@ import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
-from rich import print, box
+from rich import print, box  # pylint: disable=redefined-builtin
 from rich.console import Console
 from rich.table import Table
 from rich.logging import RichHandler
@@ -87,6 +87,11 @@ if __name__ == "__main__":
 
     payload = {}
     headers = {}
+
+    def solarstat(url, headers, payload):
+        response = requests.request("GET", url, headers=headers, data=payload)
+        respjson = json.loads(response.text)
+        return respjson
 
     def dbprune():
         """Clean up old documents in MongoDB"""
@@ -168,8 +173,8 @@ if __name__ == "__main__":
 
             current_epoch = int(time())
 
-            response = requests.request("GET", url, headers=headers, data=payload)
-            respjson = json.loads(response.text)
+            respjson = solarstat(url, headers, payload)
+
             epochlastreport = respjson["last_report_at"]
             lastreport = datetime.fromtimestamp(int(respjson["last_report_at"]))
             status = respjson["status"]
@@ -205,7 +210,7 @@ if __name__ == "__main__":
                 print("[i]No data...[/i]")
 
             if status == "comm":
-                console.log("[red]Solar panel communications failure[/]")
+                console.log("[dark_orange]--- Solar panel covered in snow? ---[/]")
 
             try:
                 client.admin.command("ping")
@@ -233,8 +238,13 @@ if __name__ == "__main__":
             except pymongo.errors.ServerSelectionTimeoutError as error:
                 log.exception(error)
         else:
+            respjson = solarstat(url, headers, payload)
+            status = respjson["status"]
             console.log(
                 "[bold bright_yellow] --- Waiting for sun! ---[/bold bright_yellow]"
+            )
+            console.log(
+                "[bold bright_yellow] --- Collection status: {status} ---[/bold bright_yellow]"
             )
 
         DB_PRUNE_DELAY = 24
