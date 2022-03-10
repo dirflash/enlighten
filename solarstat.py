@@ -89,6 +89,16 @@ if __name__ == "__main__":
     headers = {}
 
     def solarstat(url, headers, payload):
+        """API call to get weather data
+
+        Args:
+            url (str): Open Weather API URL string
+            headers (str): URL headers
+            payload (str): URL payload
+
+        Returns:
+            json: Weather information
+        """
         response = requests.request("GET", url, headers=headers, data=payload)
         respjson = json.loads(response.text)
         return respjson
