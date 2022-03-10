@@ -3,7 +3,7 @@
 
 __author__ = "Aaron Davis"
 __version__ = "0.1.0"
-__copyright__ = "Copyright (c) 2022 Aaron Davis"
+__copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
 import configparser
@@ -16,7 +16,7 @@ import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
-from rich import print, box  # pylint: disable=redefined-builtin
+from rich import print, box
 from rich.console import Console
 from rich.table import Table
 from rich.logging import RichHandler
@@ -204,6 +204,9 @@ if __name__ == "__main__":
             else:
                 print("[i]No data...[/i]")
 
+            if status == "comm":
+                console.log("[red]Solar panel communications failure[/]")
+
             try:
                 client.admin.command("ping")
             except ConnectionFailure as error:
@@ -221,17 +224,12 @@ if __name__ == "__main__":
                 post = collection.insert_one(insert)
 
                 if post.inserted_id == 0:
-                    console.log(
-                        "--- No MongoDB record created ---",
-                        style="deep_pink4",
-                    )
+                    console.log("[green]--- No MongoDB record created ---[/]")
                 else:
                     console.log(
-                        f"--- Created MongoDB record as {0} ---".format(
-                            post.inserted_id
-                        ),
-                        style="deep_pink4",
+                        f"[green]--- Created MongoDB record as {post.inserted_id} ---[/]"
                     )
+
             except pymongo.errors.ServerSelectionTimeoutError as error:
                 log.exception(error)
         else:
