@@ -69,7 +69,7 @@ def weather(api, zip_code, units):
 
     response, status_code, timeout = retrieve_weather(url)
 
-    if timeout is True:
+    while timeout is True:
         with console.status(
             "[bold green]Sleeping for 30 minutes...[/]", spinner="dots12"
         ) as status:

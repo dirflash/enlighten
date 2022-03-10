@@ -5,7 +5,7 @@ This script retrieves Envision Solar Panels from MongoDB and triggers LED's depe
 
 __author__ = "Aaron Davis"
 __version__ = "0.2.0"
-__copyright__ = "Copyright (c) 2022 Aaron Davis"
+__copyright__ = "Copyright (c) 2021 Aaron Davis"
 __license__ = "MIT License"
 
 import configparser
