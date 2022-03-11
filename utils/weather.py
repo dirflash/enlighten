@@ -27,6 +27,10 @@ def retrieve_weather(url):
         response = requests.get(url, timeout=2)
         status_code = response.status_code
         response.raise_for_status()
+        response_time = response.elapsed
+        console.log(
+            f"[bright_yellow on red3]Response time to Open Weather API: {response_time}[/]"
+        )
     except Timeout:
         print("[red bold]The 'get weather' request timed out![/]")
         response = "error"
