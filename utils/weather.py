@@ -24,7 +24,7 @@ def retrieve_weather(url):
     """Request weather information"""
     timeout = False
     try:
-        response = requests.get(url, timeout=1)
+        response = requests.get(url, timeout=2)
         status_code = response.status_code
         response.raise_for_status()
     except Timeout:
