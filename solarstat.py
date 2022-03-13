@@ -16,7 +16,7 @@ import certifi
 import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
-from rich import print, box
+from rich import print, box  # pylint: disable=redefined-builtin
 from rich.console import Console
 from rich.table import Table
 from rich.logging import RichHandler
@@ -87,6 +87,21 @@ if __name__ == "__main__":
 
     payload = {}
     headers = {}
+
+    def solarstat(url, headers, payload):
+        """API call to get weather data
+
+        Args:
+            url (str): Open Weather API URL string
+            headers (str): URL headers
+            payload (str): URL payload
+
+        Returns:
+            json: Weather information
+        """
+        response = requests.request("GET", url, headers=headers, data=payload)
+        respjson = json.loads(response.text)
+        return respjson
 
     def dbprune():
         """Clean up old documents in MongoDB"""
@@ -168,8 +183,8 @@ if __name__ == "__main__":
 
             current_epoch = int(time())
 
-            response = requests.request("GET", url, headers=headers, data=payload)
-            respjson = json.loads(response.text)
+            respjson = solarstat(url, headers, payload)
+
             epochlastreport = respjson["last_report_at"]
             lastreport = datetime.fromtimestamp(int(respjson["last_report_at"]))
             status = respjson["status"]
@@ -204,6 +219,9 @@ if __name__ == "__main__":
             else:
                 print("[i]No data...[/i]")
 
+            if status == "comm":
+                console.log("[dark_orange]--- Solar panel covered in snow? ---[/]")
+
             try:
                 client.admin.command("ping")
             except ConnectionFailure as error:
@@ -221,22 +239,22 @@ if __name__ == "__main__":
                 post = collection.insert_one(insert)
 
                 if post.inserted_id == 0:
-                    console.log(
-                        "--- No MongoDB record created ---",
-                        style="deep_pink4",
-                    )
+                    console.log("[green]--- No MongoDB record created ---[/]")
                 else:
                     console.log(
-                        f"--- Created MongoDB record as {0} ---".format(
-                            post.inserted_id
-                        ),
-                        style="deep_pink4",
+                        f"[green]--- Created MongoDB record as {post.inserted_id} ---[/]"
                     )
+
             except pymongo.errors.ServerSelectionTimeoutError as error:
                 log.exception(error)
         else:
+            respjson = solarstat(url, headers, payload)
+            status = respjson["status"]
             console.log(
                 "[bold bright_yellow] --- Waiting for sun! ---[/bold bright_yellow]"
+            )
+            console.log(
+                "[bold bright_yellow] --- Collection status: {status} ---[/bold bright_yellow]"
             )
 
         DB_PRUNE_DELAY = 24

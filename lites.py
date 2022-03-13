@@ -37,17 +37,19 @@ if __name__ == "__main__":
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    BLUE = 17
+    BLUE = 18
     RED = 23
     GREEN = 25
     WHITE = 12
     YELLOW = 20
+    HALT = 26
 
     GPIO.setup(BLUE, GPIO.OUT)
     GPIO.setup(RED, GPIO.OUT)
     GPIO.setup(GREEN, GPIO.OUT)
     GPIO.setup(WHITE, GPIO.OUT)
     GPIO.setup(YELLOW, GPIO.OUT)
+    GPIO.setup(HALT, GPIO.OUT)
 
     CONFIG_FILE = "./config.ini"
 
@@ -88,6 +90,8 @@ if __name__ == "__main__":
         if FIRST_RUN is False:
             start_time = time()
 
+        CONNECTION = True
+
         console.log("[bold green]--- Recycle for new data ---[/bold green]")
         now = datetime.now().strftime("%m-%d-%Y %I:%M:%S %p")
         console.log(f"--- Current time: {now} ---")
@@ -111,53 +115,69 @@ if __name__ == "__main__":
                 CONNECT_TIME = str(f"{connect_seconds:02}.{connect_milli:02}")
                 GPIO.output(BLUE, GPIO.HIGH)
             except ServerSelectionTimeoutError:
-                sys.exit("--- Server not available ---")
+                console.log("--- Server not available ---")
+                GPIO.output(BLUE, GPIO.LOW)
+                GPIO.output(GREEN, GPIO.LOW)
+                GPIO.output(RED, GPIO.LOW)
+                GPIO.output(WHITE, GPIO.LOW)
+                GPIO.output(YELLOW, GPIO.LOW)
+                console.log("[red]--- Blinking red ---[/red]")
+                for y in range(30):
+                    GPIO.output(HALT, GPIO.HIGH)
+                    sleep(1)
+                    GPIO.output(HALT, GPIO.LOW)
+                    sleep(1)
+                CONNECTION = False
 
-            lastrecord = collection.find().sort("_id", -1).limit(1)
-            for x in lastrecord:
-                sysup = x["Reporting"]
-                collected = x["Collected"]
-                lastreport = x["EpochLastReport"]
+            if CONNECTION is True:
 
-            lrd = time() - lastreport
-            REPORTED_DIFF = str(timedelta(seconds=lrd)).split(".", maxsplit=1)[0]
+                lastrecord = collection.find().sort("_id", -1).limit(1)
+                for x in lastrecord:
+                    sysup = x["Reporting"]
+                    collected = x["Collected"]
+                    lastreport = x["EpochLastReport"]
 
-            db_stats_table = Table(
-                title="Solar DB Statistics", box=box.SIMPLE, style="cyan"
-            )
+                lrd = time() - lastreport
+                REPORTED_DIFF = str(timedelta(seconds=lrd)).split(".", maxsplit=1)[0]
 
-            db_stats_table.add_column("Type", style="cyan3")
-            db_stats_table.add_column("Data", justify="right", style="cyan3")
+                db_stats_table = Table(
+                    title="Solar DB Statistics", box=box.SIMPLE, style="cyan"
+                )
 
-            db_stats_table.add_row("Seconds to connect to DB", CONNECT_TIME)
-            db_stats_table.add_row("Reporting", str(sysup))
-            db_stats_table.add_row("Energy collected", str(collected))
-            db_stats_table.add_row("Since last report", str(REPORTED_DIFF))
+                db_stats_table.add_column("Type", style="cyan3")
+                db_stats_table.add_column("Data", justify="right", style="cyan3")
 
-            if db_stats_table.columns:
-                console.print(db_stats_table)
-            else:
-                console.log("[i]--- No data... ---[/i]")
+                db_stats_table.add_row("Seconds to connect to DB", CONNECT_TIME)
+                db_stats_table.add_row("Reporting", str(sysup))
+                db_stats_table.add_row("Energy collected", str(collected))
+                db_stats_table.add_row("Since last report", str(REPORTED_DIFF))
 
-            if sysup is True:
-                GPIO.output(GREEN, GPIO.HIGH)
-                console.log("[bold green]--- Green LED on! ---[/bold green]")
-                console.log("[bold green]--- System Up! ---[/bold green]")
-                sleep(10)
-            else:
-                GPIO.output(RED, GPIO.HIGH)
-                console.log("[bold red]--- Red LED on! ----[/bold red]")
-                console.log("[bold red]--- System Down! ----[/bold red]")
-                sleep(10)
+                if db_stats_table.columns:
+                    console.print(db_stats_table)
+                else:
+                    console.log("[i]--- No data... ---[/i]")
 
-            if lrd > 86400:
-                GPIO.output(RED, GPIO.HIGH)
-                console.log("[bold red]--- Red LED on! ----[/bold red]")
-                console.log("[bold red]--- System Reporting Delay! ---[/bold red]")
-            else:
-                GPIO.output(WHITE, GPIO.HIGH)
-                console.log("[bold white]--- White LED on! ----[/bold white]")
-                console.log("[bold white]--- System Reporting Timely! ---[/bold white]")
+                if sysup is True:
+                    GPIO.output(GREEN, GPIO.HIGH)
+                    console.log("[bold green]--- Green LED on! ---[/bold green]")
+                    console.log("[bold green]--- System Up! ---[/bold green]")
+                    sleep(10)
+                else:
+                    GPIO.output(RED, GPIO.HIGH)
+                    console.log("[bold red]--- Red LED on! ----[/bold red]")
+                    console.log("[bold red]--- System Down! ----[/bold red]")
+                    sleep(10)
+
+                if lrd > 86400:
+                    GPIO.output(RED, GPIO.HIGH)
+                    console.log("[bold red]--- Red LED on! ----[/bold red]")
+                    console.log("[bold red]--- System Reporting Delay! ---[/bold red]")
+                else:
+                    GPIO.output(WHITE, GPIO.HIGH)
+                    console.log("[bold white]--- White LED on! ----[/bold white]")
+                    console.log(
+                        "[bold white]--- System Reporting Timely! ---[/bold white]"
+                    )
         else:
             GPIO.output(YELLOW, GPIO.HIGH)
             console.log(
