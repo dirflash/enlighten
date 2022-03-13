@@ -3,16 +3,18 @@
 
 __author__ = "Aaron Davis"
 __version__ = "0.1.0"
-__copyright__ = "Copyright (c) 2021 Aaron Davis"
+__copyright__ = "Copyright (c) 2022 Aaron Davis"
 __license__ = "MIT License"
 
 from time import time, sleep
+from datetime import timedelta
 import configparser
 import sys
+import os
 import requests
 from requests.exceptions import Timeout
-from requests.exceptions import ConnectionError
-from rich import print, box
+from requests.exceptions import ConnectionError  # pylint: disable=redefined-builtin
+from rich import print, box  # pylint: disable=redefined-builtin
 from rich.table import Table
 from rich.console import Console
 
@@ -23,9 +25,16 @@ def retrieve_weather(url):
     """Request weather information"""
     timeout = False
     try:
-        response = requests.get(url, timeout=1)
+        response = requests.get(url, timeout=2)
         status_code = response.status_code
         response.raise_for_status()
+        response_time = response.elapsed
+        if response_time > timedelta(seconds=0.6):
+            console.log(
+                f"[bright_yellow]Response time to Open Weather API: {response_time}[/]"
+            )
+        else:
+            console.log(f"[green]Response time to Open Weather API: {response_time}[/]")
     except Timeout:
         print("[red bold]The 'get weather' request timed out![/]")
         response = "error"
@@ -54,6 +63,7 @@ def retrieve_weather(url):
 
 def weather(api, zip_code, units):
     """Get weather details"""
+    console.log("[green]Entered weather function.[/]")
 
     url = (
         "http://api.openweathermap.org/data/2.5/weather?"
@@ -73,7 +83,7 @@ def weather(api, zip_code, units):
         ) as status:
             sleep(1800)
             console.log("[green]Finished sleeping. Try again.[/green]")
-        response = retrieve_weather(url)
+        response, status_code, timeout = retrieve_weather(url)
 
     if timeout is False:
         if status_code == 200:
@@ -118,12 +128,15 @@ def weather(api, zip_code, units):
         else:
             print("[i]No data...[/i]")
 
+        console.log("[green]Exiting weather function.[/]")
+
         return (localviz, collect)
 
 
 if __name__ == "__main__":
+    config_file = os.path.abspath(r"c:\code\enlighten\enlighten\config.ini")
     config = configparser.ConfigParser()
-    config.read("./config/config.ini")
+    config.read(config_file)
     api = config["WEATHER"]["weather_api"]
     zip_code = config["WEATHER"]["zip"]
     units = config["WEATHER"]["units"]
