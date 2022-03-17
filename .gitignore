@@ -10,3 +10,4 @@
 __pycache__
 logs/**
 config/**
+mongo_test.py
