@@ -7,6 +7,7 @@ __copyright__ = "Copyright (c) 2022 Aaron Davis"
 __license__ = "MIT License"
 
 from time import time, sleep
+from datetime import timedelta
 import configparser
 import sys
 import os
@@ -28,9 +29,12 @@ def retrieve_weather(url):
         status_code = response.status_code
         response.raise_for_status()
         response_time = response.elapsed
-        console.log(
-            f"[bright_yellow on red3]Response time to Open Weather API: {response_time}[/]"
-        )
+        if response_time > timedelta(seconds=0.6):
+            console.log(
+                f"[bright_yellow]Response time to Open Weather API: {response_time}[/]"
+            )
+        else:
+            console.log(f"[green]Response time to Open Weather API: {response_time}[/]")
     except Timeout:
         print("[red bold]The 'get weather' request timed out![/]")
         response = "error"
