@@ -220,7 +220,7 @@ if __name__ == "__main__":
                 print("[i]No data...[/i]")
 
             if status == "comm":
-                console.log("[dark_orange]--- Solar panel covered in snow? ---[/]")
+                console.log("[dark_orange]--- Down network connection to cloud! ---[/]")
 
             try:
                 client.admin.command("ping")
