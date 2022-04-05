@@ -28,7 +28,7 @@ def retrieve_weather(url):
         adapter = HTTPAdapter(max_retries=retries)
         http = requests.Session()
         http.mount("http://", adapter)
-        response = http.get(url)
+        response = http.get(url, timeout=5)
         status_code = response.status_code
         response_time = response.elapsed
         if response_time > timedelta(seconds=0.6):
