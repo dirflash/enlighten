@@ -6,14 +6,13 @@ __version__ = "0.1.0"
 __copyright__ = "Copyright (c) 2022 Aaron Davis"
 __license__ = "MIT License"
 
-from time import time, sleep
+from time import time
 from datetime import timedelta
 import configparser
-import sys
 import os
 import requests
+from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import Timeout
-from requests.exceptions import ConnectionError  # pylint: disable=redefined-builtin
 from rich import print, box  # pylint: disable=redefined-builtin
 from rich.table import Table
 from rich.console import Console
@@ -25,9 +24,12 @@ def retrieve_weather(url):
     """Request weather information"""
     timeout = False
     try:
-        response = requests.get(url, timeout=2)
+        retries = Retry(total=3, status_forcelist=[429, 500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retries)
+        http = requests.Session()
+        http.mount("http://", adapter)
+        response = http.get(url)
         status_code = response.status_code
-        response.raise_for_status()
         response_time = response.elapsed
         if response_time > timedelta(seconds=0.6):
             console.log(
@@ -35,29 +37,12 @@ def retrieve_weather(url):
             )
         else:
             console.log(f"[green]Response time to Open Weather API: {response_time}[/]")
+
     except Timeout:
         print("[red bold]The 'get weather' request timed out![/]")
         response = "error"
         status_code = 0
         timeout = True
-    except ConnectionError as connect_error:
-        print(f"[red bold]Error: [/] {connect_error}")
-        response = "error"
-        status_code = 0
-        timeout = True
-    except requests.HTTPError:
-        status = response.status_code
-        if status == 401:
-            print("[orange1]Invalid API key.[/]")
-            sys.exit(1)
-        elif status == 404:
-            print("[orange1]Invalid input.[/]")
-            sys.exit(1)
-        elif status in (429, 443):
-            print("[orange1]API calls per minute exceeded.[/]")
-            response = "error"
-            status_code = 0
-            timeout = True
     return (response, status_code, timeout)
 
 
@@ -76,14 +61,6 @@ def weather(api, zip_code, units):
     )
 
     response, status_code, timeout = retrieve_weather(url)
-
-    while timeout is True:
-        with console.status(
-            "[bold green]Sleeping for 30 minutes...[/]", spinner="dots12"
-        ) as status:
-            sleep(1800)
-            console.log("[green]Finished sleeping. Try again.[/green]")
-        response, status_code, timeout = retrieve_weather(url)
 
     if timeout is False:
         if status_code == 200:

@@ -3,6 +3,7 @@
 .env
 .venv
 .vscode
+*.bak
 *.ini
 *.log
 *.bat
