@@ -24,7 +24,9 @@ def retrieve_weather(url):
     """Request weather information"""
     timeout = False
     try:
-        retries = Retry(total=3, status_forcelist=[429, 500, 502, 503, 504])
+        retries = Retry(
+            total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
+        )
         adapter = HTTPAdapter(max_retries=retries)
         http = requests.Session()
         http.mount("http://", adapter)
